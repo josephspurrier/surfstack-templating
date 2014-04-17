@@ -73,7 +73,7 @@ $view->wasCacheCurrent();
 
 The SurfStack Template Engine supports plugins which are custom code you can
 create yourself and then tie them to a class. The engine supports blocks and
-slices. The block do work over multiple lines.
+slices. The blocks do work over multiple lines.
 
 Here is an example of a block and slice you could place in your template.
 

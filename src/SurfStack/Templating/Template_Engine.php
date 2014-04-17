@@ -401,7 +401,7 @@ class Template_Engine
                         }
                         else if (strstr($f, 'Slice.php') !== false)
                         {
-                            $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/';
+                            $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
                         }
             
                         require $file;
