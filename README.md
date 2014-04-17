@@ -18,14 +18,16 @@ come up with.
 # Setup the Template Engine
 
 It's a snap. Just pass your template file to the constructor, set the Cache
-directory, assign a few variables, and then render the template. The engine
-will create a cached version of the template in pure PHP and store it with
-a unique file name in the Cache directory
+and Plugin directories, assign a few variables, and then render the template.
+The engine will create a cached version of the template in pure PHP and store
+it with a unique file name in the Cache directory.
 
 ```php
 require 'Template_Engine.php';
 
 $view = new SurfStack\Templating\Template_Engine('template/template.tpl');
+
+$view->setPluginDir('plugin');
 
 $view->setCacheDir('template_c');
 
@@ -46,6 +48,9 @@ $view->setStripTags(false);
 // Strip whitespace from template (default is true)
 $view->setStripWhitespace(false);
 
+// Load plugins (default is true)
+$view->setLoadPlugins(false);
+
 // Delete all the cached templates
 $view->clearCache();
 
@@ -64,6 +69,49 @@ $view->updateCache();
 // Was the template cached before render() was run?
 $view->wasCacheCurrent();
 ```
+# Plugins
+
+The SurfStack Template Engine supports plugins which are custom code you can
+create yourself and then tie them to a class. The engine supports blocks and
+slices. The block do work over multiple lines.
+
+Here is an example of a block and slice you could place in your template.
+
+```
+{BoldBlock name='Joe' items=$items} Hello: {/BoldBlock} it is {TimeSlice}
+```
+
+And here is the class you could write. Name it BoldBlock.php and place it in your
+plugin folder.
+
+```php
+namespace SurfStack\Templating\Plugin;
+
+class BoldBlock extends Block
+{
+    function render($strContent, $arrData)
+    {
+        return '<strong>'.$strContent.'</strong>'.$arrData['name'];
+    }
+}
+```
+
+Here is the code for the slice. Name it TimeSlice.php and place it in your plugin
+folder.
+
+```php
+namespace SurfStack\Templating\Plugin;
+
+class TimeSlice extends Slice
+{
+    function render($arrData)
+    {
+        return date('l jS \of F Y h:i:s A');
+    }
+}
+```
+
+The template will then output: **Hello:** Joe it is Thursday 17th of April 2014 04:47:56 AM
 
 # Comparison of Syntax
 
@@ -84,6 +132,8 @@ make use of any PHP short tags.
 {*
 This is a multi line comment
 *}
+
+{require 'header.tpl'}
 
 {if (is_array($items))}
   {foreach ($items as $item)}
@@ -141,6 +191,8 @@ enabled.
 This is a multi line comment
 */
 
+<? require 'header.tpl'; ?>
+
 <? if ($items): ?>
   <? foreach ($items as $item): ?>
     * <?= $item ?>
@@ -194,6 +246,8 @@ function to ensure your output is safe.
 /*
 This is a multi line comment
 */
+
+<?php require 'header.tpl'; ?>
 
 <?php if ($items): ?>
   <?php foreach ($items as $item): ?>
