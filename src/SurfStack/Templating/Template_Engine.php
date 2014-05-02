@@ -131,7 +131,7 @@ class Template_Engine
      */
     function setPluginDir($path)
     {
-        $this->setInternal('PluginDir', rtrim($path, '/'));
+        $this->setInternal('PluginDir', rtrim(realpath($path), '/'));
     }
     
     /**
@@ -214,7 +214,7 @@ class Template_Engine
      */
     function setCacheDir($path)
     {
-        $this->setInternal('CacheDir', rtrim($path, '/'));
+        $this->setInternal('CacheDir', rtrim(realpath($path), '/'));
     }
     
     /**
@@ -323,7 +323,7 @@ class Template_Engine
      */
     function setCompileDir($path)
     {
-        $this->setInternal('CompileDir', rtrim($path, '/'));
+        $this->setInternal('CompileDir', rtrim(realpath($path), '/'));
     }
     
     /**
@@ -575,11 +575,11 @@ class Template_Engine
                     
                     $name = str_replace('.php', '', $f);
         
-                    if (strstr($f, 'Block.php') !== false)
+                    if (strpos($f, 'Block.php') !== false)
                     {
                         $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.[^\}\{]*?)\{\/\s*'.$name.'\s*\}/i';
                     }
-                    else if (strstr($f, 'Slice.php') !== false)
+                    else if (strpos($f, 'Slice.php') !== false)
                     {
                         $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
                     }
