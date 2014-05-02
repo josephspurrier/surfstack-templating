@@ -2,14 +2,17 @@ SurfStack Templating for PHP [![Build Status](https://travis-ci.org/josephspurri
 =================================
 
 The SurfStack Template Engine is a barebones system designed to
-be lean and quick. It uses a syntax very similar to Smarty and outputs cached
-templates in pure PHP. The engine uses regular expressions to strip out open
-and closed PHP tags, PHP echo short tags, PHP short tags, and ASP tags to keep
-your templates clean and readable.
+be lean and quick. It uses a syntax very similar to Smarty and outputs compiled
+and optional cached templates in pure PHP. The engine also has optional regular
+expressions to strip out open and closed PHP tags, PHP echo short tags, PHP short tags,
+and ASP tags to keep your templates clean and readable.
 
 PHP itself is a template system, BUT it's not the easiest to read at glance.
 Instead of using tags like <?php, the SurfStack Template Engine uses
 curly braces so you can type less and build more.
+
+There is a full set of unit tests for the Template Engine class using PHPUnit.
+The Template Engine has 100% code coverage.
 
 If you are looking for a lightweight template engine to use with PHP, please
 fork the project and add your own customizations. I'd love you see what you
@@ -17,23 +20,50 @@ come up with.
 
 # Setup the Template Engine
 
-It's a snap. Just pass your template file to the constructor, set the Cache
-and Plugin directories, assign a few variables, and then render the template.
-The engine will create a cached version of the template in pure PHP and store
-it with a unique file name in the Cache directory.
+It's a snap. Just pass your template file to the constructor, set the compile
+directory, assign a few variables, and then render the template.
+The engine will create a compiled version of the template in PHP and store
+it with a unique file name in the compile directory.
 
 ```php
-require 'Template_Engine.php';
-
+// Create an instance of the class
 $view = new SurfStack\Templating\Template_Engine('template/template.tpl');
 
-$view->setPluginDir('plugin');
+// Set the compile directory
+$view->setCompileDir('template_compile');
 
-$view->setCacheDir('template_c');
+// Assign variables
+$view->assign('items', array('hello', 'world));
 
-$view->assign('items', $items);
-
+// Render the template to the screen
 $view->render();
+```
+
+# Compiling and Caching
+
+In order to render a template, the SurfStack markup must be converted to valid PHP.
+The compiled (converted) file contains valid PHP and is stored in the compile directory.
+You can also enable caching which will pre-render the compiled file and store cached
+file in the cache directory so it can be quickly displayed without interpreting any PHP
+code. The compiled file will update whenever the original template changes while the cached
+file will only update at the end of it's lifetime. You can manually set the lifetime
+to control how often the cache is refreshed. You can also force the template engine to
+check the original file for changes on every page request. The page may load a bit slower
+but will always detect changes in the templates.
+
+```php
+// Set the cache directory
+$view->setCacheDir('template_cache');
+
+// Enable caching
+$view->setCacheTemplates(true);
+
+// Set the lifetime of a file to 60 seconds
+$view->setCacheLifetime(60);
+
+// Check the original file on every page request
+$view->setAlwaysCheckOriginal(true);
+
 ```
 
 # Settings and Available Methods
@@ -42,33 +72,43 @@ You also have access to these public methods to make it easy to troubleshoot
 and manage your cache and templates.
 
 ```php
-// Strip PHP tags from template (default is true)
-$view->setStripTags(false);
+// Strip PHP tags from template
+$view->setStripTags(true);
 
-// Strip whitespace from template (default is true)
-$view->setStripWhitespace(false);
+// Strip whitespace from template
+$view->setStripWhitespace(true);
 
-// Load plugins (default is true)
-$view->setLoadPlugins(false);
+// Set the plugin directory
+$view->setPluginDir('plugin');
 
-// Delete all the cached templates
+// Load plugins
+$view->setLoadPlugins(true);
+
+// Delete the files
 $view->clearCache();
+$view->clearCompile();
 
-// Get the path of the cached template
+// Get the path of the files
 $view->getCachedTemplate();
+$view->getCompiledTemplate();
 
-// Is the cache current?
+// Are the files current?
 $view->isCacheCurrent();
+$view->isCompileCurrent();
 
-// Is the template cached?
+// Are the files cached?
 $view->isCached();
+$view->isCompiled();
 
-// Force update the cached template
+// Force update the files
 $view->updateCache();
+$view->updateCompile();
 
-// Was the template cached before render() was run?
+// Were the files current before render() was run?
 $view->wasCacheCurrent();
+$view->wasCompileCurrent();
 ```
+
 # Plugins
 
 The SurfStack Template Engine supports plugins which are custom code you can
@@ -258,7 +298,7 @@ This is a multi line comment
 <?php elseif (is_string($items)): ?>
   Items is a string, should be an array.
 <?php else: ?>
-  No item has been found..
+  No item has been found.
 <?php endif; ?>
 
 <?php for ($i = 0; $i < 10; $i++): ?>

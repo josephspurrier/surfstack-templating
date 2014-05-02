@@ -25,12 +25,14 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {
         $this->view = new SurfStack\Templating\Template_Engine(__DIR__.'/template/template.tpl');
         
-        $this->view->setCacheDir(__DIR__.'/template_c');
+        $this->view->setCompileDir(__DIR__.'/template_compile');
+        $this->view->setCacheDir(__DIR__.'/template_cache');
         $this->view->setPluginDir(__DIR__.'/plugin');
         
-        $this->view->setLoadPlugins(true);
-        
+        $this->view->clearCompile();
         $this->view->clearCache();
+        
+        $this->view->setLoadPlugins(true);
         
         $items = array(
         'item1' => 'i1z',
@@ -42,6 +44,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
     protected function tearDown()
     {
+        $this->view->clearCompile();
         $this->view->clearCache();
     }
     
@@ -55,15 +58,15 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
     public function testCaching()
     {
-        $this->view->clearCache();
+        $this->view->clearCompile();
 
         $this->render();
         
-        $this->assertFalse($this->view->wasCacheCurrent());
+        $this->assertFalse($this->view->wasCompileCurrent());
         
         $this->render();
         
-        $this->assertTrue($this->view->wasCacheCurrent());
+        $this->assertTrue($this->view->wasCompileCurrent());
     }
     
     public function testClear()
@@ -217,14 +220,31 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $this->render();
         
-        $this->assertSame(file_get_contents($this->view->getCachedTemplate()), file_get_contents($after));
+        $this->assertSame(file_get_contents($this->view->getCompiledTemplate()), file_get_contents($after));
+    }
+    
+    public function testNoLoadPlugins()
+    {        
+        $this->expectOutputString("{BoldBlock name='world'}Hello{/BoldBlock}!");
+        
+        $this->view->setTemplate(__DIR__.'/template/block.tpl');
+        
+        $this->view->setLoadPlugins(false);
+        
+        $this->view->setStripTags(false);
+        
+        $this->view->setStripWhitespace(false);
+        
+        $this->view->render();
     }
     
     public function testBlock()
-    {
+    {        
         $this->expectOutputString('<strong>Hello</strong> world!');
         
         $this->view->setTemplate(__DIR__.'/template/block.tpl');
+        
+        $this->view->setLoadPlugins(true);
     
         $this->view->setStripTags(false);
     
@@ -239,10 +259,135 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setTemplate(__DIR__.'/template/slice.tpl');
     
+        $this->view->setLoadPlugins(true);
+        
         $this->view->setStripTags(false);
     
         $this->view->setStripWhitespace(false);
     
         $this->view->render();
     }
+
+    public function testNoCacheTemplates()
+    {
+        $this->view->setCacheTemplates(false);
+        
+        $this->view->setCacheLifetime(-1);
+        
+        $this->render();
+        
+        $this->assertFalse($this->view->isCacheCurrent());
+        
+        $this->assertNull($this->view->wasCacheCurrent());
+    }
+    
+    public function testCacheNeverExpire()
+    {
+        $this->view->setCacheTemplates(true);
+        
+        $this->view->setCacheLifetime(-1);
+        
+        $this->render();
+        
+        $this->assertTrue($this->view->isCacheCurrent());
+    }
+    
+    public function testCacheAlwaysExpire()
+    {
+        $this->view->setCacheTemplates(true);
+    
+        $this->view->setCacheLifetime(0);
+        
+        $this->render();
+    
+        $this->assertFalse($this->view->isCacheCurrent());
+    }
+    
+    public function testCacheNotExpire()
+    {
+        $this->view->setCacheTemplates(true);
+    
+        $this->view->setCacheLifetime(2);
+    
+        $this->render();
+        
+        sleep(1);
+        
+        $this->assertTrue($this->view->isCacheCurrent());
+    }
+    
+    public function testCacheExpire()
+    {
+        $this->view->clearCache();
+    
+        $this->view->setCacheLifetime(1);
+    
+        $this->render();
+    
+        sleep(1);
+
+        $this->assertFalse($this->view->isCacheCurrent());
+    }
+    
+    public function testNoCheckOriginalMissingCompiled()
+    {
+        $this->view->setCacheTemplates(true);
+    
+        $this->view->setAlwaysCheckOriginal(false);
+    
+        $this->view->setCacheLifetime(5);
+    
+        $this->render();
+    
+        $this->assertTrue($this->view->isCacheCurrent());
+    
+        $this->view->clearCompile();
+    
+        $this->render();
+    
+        $this->assertTrue($this->view->wasCacheCurrent());
+    
+        $this->assertNull($this->view->wasCompileCurrent());
+    }
+    
+    public function testAlwaysCheckOriginalMissingCompiled()
+    {
+        $this->view->setCacheTemplates(true);
+        
+        $this->view->setAlwaysCheckOriginal(true);
+        
+        $this->view->setCacheLifetime(5);
+        
+        $this->render();
+        
+        $this->assertTrue($this->view->isCacheCurrent());
+        
+        $this->view->clearCompile();
+        
+        $this->render();
+        
+        $this->assertFalse($this->view->wasCacheCurrent());
+        
+        $this->assertFalse($this->view->wasCompileCurrent());
+    }
+    
+    public function testAlwaysCheckOriginalNotMissing()
+    {
+        $this->view->setCacheTemplates(true);
+    
+        $this->view->setAlwaysCheckOriginal(true);
+    
+        $this->view->setCacheLifetime(5);
+    
+        $this->render();
+    
+        $this->assertTrue($this->view->isCacheCurrent());
+    
+        $this->render();
+    
+        $this->assertTrue($this->view->wasCacheCurrent());
+    
+        $this->assertTrue($this->view->wasCompileCurrent());
+    }
+    
 }

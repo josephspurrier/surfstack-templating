@@ -15,8 +15,8 @@ namespace SurfStack\Templating;
  * SurfStack Template Engine
  *
  * Strips PHP tags, converts custom tags to PHP tags, and saves the modified
- * template as a cached template based on the timestamp of the current PHP
- * template. Renders the cached template to the screen.
+ * template as a compiled template based on the timestamp of the current PHP
+ * template. Renders the compiled template to the screen.
  */
 class Template_Engine
 {    
@@ -48,9 +48,12 @@ class Template_Engine
         
         // Set the default settings
         $this->internal = array(
-            'StripTags' => true,
-            'StripWhitespace' => true,
-            'LoadPlugins' => true,
+            'StripTags' => false,
+            'StripWhitespace' => false,
+            'LoadPlugins' => false,
+            'CacheTemplates' => false,
+            'CacheLifetime' => 3600,
+            'AlwaysCheckOriginal' => false,
         );
     }
     
@@ -69,8 +72,11 @@ class Template_Engine
         // Store the template full path
         $this->template = stream_resolve_include_path($template);
         
-        // Set the include path to include the template directory
-        set_include_path(get_include_path().PATH_SEPARATOR.dirname($this->template));
+        if (strstr(get_include_path(), dirname($this->template)) === false)
+        {
+            // Set the include path to include the template directory
+            set_include_path(get_include_path().PATH_SEPARATOR.dirname($this->template));
+        }
     }
 
     /**
@@ -100,14 +106,23 @@ class Template_Engine
     {
         $this->internal[$key] = $value;
     }
-
+    
     /**
-     * Set the path of the cache dir
-     * @param string $path
+     * Set all the internal variables
+     * @param array $arr
      */
-    function setCacheDir($path)
+    protected function setInternals(array $arr)
     {
-        $this->setInternal('CompiledDir', rtrim($path, '/'));
+        $this->internal = $arr;
+    }
+    
+    /**
+     * Get all the internal variables
+     * @return array
+     */
+    protected function getInternals()
+    {
+        return $this->internal;
     }
     
     /**
@@ -120,7 +135,7 @@ class Template_Engine
     }
     
     /**
-     * Strip PHP tags, PHP short tags, PHP echo short tags, and ASP tags (default true)
+     * Enable or disable stripping PHP tags, PHP short tags, PHP echo short tags, and ASP tags
      * @param bool $bool
      */
     function setStripTags($bool)
@@ -129,7 +144,7 @@ class Template_Engine
     }
     
     /**
-     * Strip whitespace around content removed from template (default true)
+     * Enable or disable stripping whitespace around content removed from template
      * @param bool $bool
      */
     function setStripWhitespace($bool)
@@ -138,7 +153,7 @@ class Template_Engine
     }
     
     /**
-     * Load the plugins (default true)
+     * Enable or disable loading the plugins
      * @param bool $bool
      */
     function setLoadPlugins($bool)
@@ -147,30 +162,31 @@ class Template_Engine
     }
     
     /**
-     * Get the path of the cache dir
-     * @return string
+     * Enable or disable caching of templates
+     * @param bool $bool
      */
-    function getCacheDir()
+    function setCacheTemplates($bool)
     {
-        return ($this->getInternal('CompiledDir') ? $this->getInternal('CompiledDir') : dirname(realpath($this->template)));
+        $this->setInternal('CacheTemplates', $bool);
     }
     
     /**
-     * Get the extension of the cache file (no leading dot)
-     * @return string
+     * Set the cache lifetime. Default is 3600 seconds which is 1 hour.
+     * 0 will expire immediately. -1 will never expire.
+     * @param int $seconds
      */
-    function getCacheExtension()
+    function setCacheLifetime($seconds)
     {
-        return 'c.php';
+        $this->setInternal('CacheLifetime', $seconds);
     }
-    
+
     /**
-     * Get the path of the cached template
-     * @return string
+     * Check if the original file was modified on every page request
+     * @param bool $bool
      */
-    function getCachedTemplate()
-    {        
-        return $this->getCacheDir().'/'.$this->getMD5Template().'.'.$this->getCacheExtension();
+    function setAlwaysCheckOriginal($bool)
+    {
+        $this->setInternal('AlwaysCheckOriginal', $bool);
     }
     
     /**
@@ -190,6 +206,42 @@ class Template_Engine
     function getTimestampTemplate()
     {
         return filemtime($this->template);
+    }
+
+    /**
+     * Set the path of the cache dir
+     * @param string $path
+     */
+    function setCacheDir($path)
+    {
+        $this->setInternal('CacheDir', rtrim($path, '/'));
+    }
+    
+    /**
+     * Get the path of the cache dir
+     * @return string
+     */
+    function getCacheDir()
+    {
+        return ($this->getInternal('CacheDir') ? $this->getInternal('CacheDir') : dirname(realpath($this->template)));
+    }
+    
+    /**
+     * Get the extension of the cache file (no leading dot)
+     * @return string
+     */
+    function getCacheExtension()
+    {
+        return 'ca.php';
+    }
+    
+    /**
+     * Get the path of the cached template
+     * @return string
+     */
+    function getCachedTemplate()
+    {
+        return $this->getCacheDir().'/'.$this->getMD5Template().'.'.$this->getCacheExtension();
     }
     
     /**
@@ -211,12 +263,19 @@ class Template_Engine
     }
     
     /**
-     * Does the cached template timestamp match the current template timestamp?
+     * Is the cached template timestamp within it's lifetime?
      * @return boolean
      */
     function isCacheCurrent()
-    {        
-        return ($this->isCached() && $this->getTimestampTemplate() == $this->getTimestampCache());
+    {
+        if ($this->isCached() && $this->getInternal('CacheLifetime') === -1)
+        {
+            return true;
+        }
+        else
+        {
+            return ($this->isCached() && time() < ($this->getTimestampCache() + $this->getInternal('CacheLifetime')));
+        }
     }
     
     /**
@@ -233,9 +292,130 @@ class Template_Engine
      */
     function updateCache()
     {
-        file_put_contents($this->getCachedTemplate(), $this->modifyTemplateRegex(file_get_contents($this->template)));
-        touch($this->getCachedTemplate(), filemtime($this->template));
-    } 
+        ob_start();
+    
+        extract($this->variables);
+        
+        require $this->getCompiledTemplate();
+    
+        $output = ob_get_contents();
+    
+        ob_end_clean();
+    
+        file_put_contents($this->getCachedTemplate(), $output);
+    }
+    
+    /**
+     * Delete all cached templates
+     * Must be called after setCacheDir
+     */
+    function clearCache()
+    {
+        foreach(glob($this->getCacheDir().'/*'.'.'.$this->getCacheExtension()) as $file)
+        {
+            @unlink($file);
+        }
+    }
+    
+    /**
+     * Set the path of the compile dir
+     * @param string $path
+     */
+    function setCompileDir($path)
+    {
+        $this->setInternal('CompileDir', rtrim($path, '/'));
+    }
+    
+    /**
+     * Get the path of the compile dir
+     * @return string
+     */
+    function getCompileDir()
+    {
+        return ($this->getInternal('CompileDir') ? $this->getInternal('CompileDir') : dirname(realpath($this->template)));
+    }
+    
+    /**
+     * Get the extension of the compile file (no leading dot)
+     * @return string
+     */
+    function getCompileExtension()
+    {
+        return 'co.php';
+    }
+    
+    /**
+     * Get the path of the compiled template
+     * @return string
+     */
+    function getCompiledTemplate()
+    {
+        return $this->getCompileDir().'/'.$this->getMD5Template().'.'.$this->getCompileExtension();
+    }
+    
+    /**
+     * Get the timestamp of the compiled template
+     * @return number
+     */
+    function getTimestampCompile()
+    {
+        return filemtime($this->getCompiledTemplate());
+    }
+    
+    /**
+     * Is the template compiled?
+     * @return boolean
+     */
+    function isCompiled()
+    {
+        return is_file($this->getCompiledTemplate());
+    }
+    
+    /**
+     * Does the compiled template timestamp match the current template timestamp?
+     * @return boolean
+     */
+    function isCompileCurrent()
+    {
+        return ($this->isCompiled() && $this->getTimestampTemplate() == $this->getTimestampCompile());
+    }
+    
+    /**
+     * Was the compiled template current before render was called?
+     * @return mixed | NULL
+     */
+    function wasCompileCurrent()
+    {
+        return $this->getInternal('WasCompiled');
+    }
+    
+    /**
+     * Updated the compiled template
+     */
+    function updateCompile()
+    {        
+        file_put_contents($this->getCompiledTemplate(), $this->modifyTemplateRegex(file_get_contents($this->template)));
+        
+        touch($this->getCompiledTemplate(), filemtime($this->template));
+        
+        // Update cache if enabled
+        if ($this->getInternal('CacheTemplates'))
+        {
+            $this->updateCache();
+        }
+    }
+    
+    /**
+     * Delete all compiled templates
+     * Must be called after setCompileDir
+     */
+    function clearCompile()
+    {
+        foreach(glob($this->getCompileDir().'/*'.'.'.$this->getCompileExtension()) as $file)
+        {
+            @unlink($file);
+        }
+    }
     
     /**
      * Assign a variable to be passed to template
@@ -271,18 +451,6 @@ class Template_Engine
     function clear()
     {
         $this->variables = array();
-    }
-    
-    /**
-     * Delete all cached templates
-     * Must be called after setCacheDir
-     */
-    function clearCache()
-    {
-        foreach(glob($this->getCacheDir().'/*'.'.'.$this->getCacheExtension()) as $file)
-        {
-            @unlink($file);
-        }
     }
     
     /**
@@ -331,7 +499,7 @@ class Template_Engine
     }
 
     /**
-     * Cache the required template from require
+     * Compile the required template from require
      * @param array $matches
      * @throws \ErrorException
      * @return string
@@ -347,18 +515,18 @@ class Template_Engine
             // Generate a new instance of this class
             $class = new self(stream_resolve_include_path($match));
             
-            // Set the cache folder
-            $class->setCacheDir($this->getCacheDir());
+            // Copy over the settings
+            $class->setInternals($this->getInternals());
             
-            // If the cache is not current
-            if (!$class->isCacheCurrent())
+            // If the compile is not current
+            if (!$class->isCompileCurrent())
             {
-                // Update the cahce
-                $class->updateCache();
+                // Update the compile
+                $class->updateCompile();
             }
             
             // Return the full path to the template
-            return "{require '".realpath($class->getCachedTemplate())."'}";
+            return "{require '".realpath($class->getCompiledTemplate())."'}";
             
         }
         else
@@ -401,28 +569,22 @@ class Template_Engine
         {
             if ($this->getInternal('PluginDir'))
             {
-                require_once $this->getInternal('PluginDir').'/Block.php';
-                require_once $this->getInternal('PluginDir').'/Slice.php';
-            
                 foreach(glob($this->getInternal('PluginDir').'/*.php') as $file)
                 {
                     $f = basename($file);
                     
-                    if (!in_array($f, array('Block.php', 'Slice.php')))
+                    $name = str_replace('.php', '', $f);
+        
+                    if (strstr($f, 'Block.php') !== false)
                     {
-                        $name = str_replace('.php', '', $f);
-            
-                        if (strstr($f, 'Block.php') !== false)
-                        {
-                            $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.[^\}\{]*?)\{\/\s*'.$name.'\s*\}/i';
-                        }
-                        else if (strstr($f, 'Slice.php') !== false)
-                        {
-                            $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
-                        }
-            
-                        require_once $file;
+                        $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.[^\}\{]*?)\{\/\s*'.$name.'\s*\}/i';
                     }
+                    else if (strstr($f, 'Slice.php') !== false)
+                    {
+                        $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
+                    }
+        
+                    require_once $file;
                 }
             }
         }
@@ -457,7 +619,7 @@ class Template_Engine
     }
     
     /**
-     * Return the render() function so the cached template can
+     * Return the render() function so the compiled template can
      * call the plugin
      * @param array $matches
      */
@@ -579,23 +741,93 @@ OUTPUT;
     }
 
     /**
-     * Render the cached template (cache first if not current)
+     * Render the template (compile and caching logic)
      */
     function render()
     {
-        if (!$this->isCacheCurrent())
+        // Marked them as null for testing purposes
+        $this->setInternal('WasCached', null);
+        $this->setInternal('WasCompiled', null);
+        
+        // If caching is enabled
+        if ($this->getInternal('CacheTemplates'))
         {
-            $this->setInternal('WasCached', false);
-            $this->updateCache();
+            // If the cache is current
+            if ($this->isCacheCurrent())
+            {
+                // Marked the cache as current
+                $this->setInternal('WasCached', true);
+                
+                // If set to always check and the the compile is not current
+                if ($this->getInternal('AlwaysCheckOriginal'))
+                {
+                    // If the compile is current
+                    if ($this->isCompileCurrent())
+                    {
+                        // Mark the compile as current
+                        $this->setInternal('WasCompiled', true);
+                    }
+                    else
+                    {
+                        // Mark the compile as not current
+                        $this->setInternal('WasCompiled', false);
+                        
+                        // Mark the cache as not current
+                        $this->setInternal('WasCached', false);
+                        
+                        // Load the plugins
+                        $this->loadPlugins();
+                        
+                        // Update the compile (and the cache)
+                        $this->updateCompile();
+                    }
+                }
+            }
+            // Else the cache does not exist or is expired
+            else
+            {
+                // Marked the cache as not current
+                $this->setInternal('WasCached', false);
+                
+                // Mark the compile as not current
+                $this->setInternal('WasCompiled', false);
+                
+                // Load the plugins
+                $this->loadPlugins();
+                
+                // Update the compile (and the cache)
+                $this->updateCompile();
+            }
+            
+            // Render the cache
+            require $this->getCachedTemplate();
         }
+        // Else caching is not enabled
         else
         {
-            $this->setInternal('WasCached', true);
+            // If the compile is current
+            if ($this->isCompileCurrent())
+            {
+                // Mark the compile as current                
+                $this->setInternal('WasCompiled', true);
+            }
+            else
+            {
+                // Mark the compile as not current
+                $this->setInternal('WasCompiled', false);
+                
+                // Update the compile
+                $this->updateCompile();
+            }
+            
+            // Load the plugins
             $this->loadPlugins();
-        }
-    
-        extract($this->variables);
-    
-        require $this->getCachedTemplate();
+            
+            // Extract the variables
+            extract($this->variables);
+        
+            // Render the compile
+            require $this->getCompiledTemplate();
+        }   
     }
 }
