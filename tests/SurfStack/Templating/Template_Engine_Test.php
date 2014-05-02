@@ -23,9 +23,6 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
     protected function setUp()
     {
-        //$dir = __DIR__.'/../../../public';
-        
-        //require_once $dir.'/Template_Engine.php';
         $this->view = new SurfStack\Templating\Template_Engine(__DIR__.'/template/template.tpl');
         
         $this->view->setCacheDir(__DIR__.'/template_c');
