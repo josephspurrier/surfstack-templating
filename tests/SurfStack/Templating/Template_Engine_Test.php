@@ -56,7 +56,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         ob_end_clean();
     }
     
-    public function testCaching()
+    public function testCompiling()
     {
         $this->view->clearCompile();
 
@@ -68,7 +68,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $this->assertTrue($this->view->wasCompileCurrent());
     }
-    
+ 
     public function testClear()
     {
         $items = array(

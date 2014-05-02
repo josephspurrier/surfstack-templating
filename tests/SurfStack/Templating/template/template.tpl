@@ -43,49 +43,6 @@
 
 <br />
 
-/* This is a comment */
-
-<? if ($items): ?>
-  <? foreach ($items as $item): ?>
-    * <?= $item ?>
-  <? endforeach; ?>
-<? else: ?>
-  No item has been found.
-<? endif; ?>
-
-<? for ($i = 0; $i < 10; $i++): ?>
-  * <?= $i ?>
-<? endfor; ?>
-
-<? $i = 0; ?>
-<? while ($i <= 10): ?>
-  <?= $i; ?>
-  <? $i++; ?>
-<? endwhile; ?>
-
-<? $i = 0; ?>
-
-<? $i++; ?>
-
-<?= htmlentities($i, ENT_QUOTES, "UTF-8"); ?>
-
-<?php switch ($i):
-  case 0: ?>
-    <?= "i equals 0"; ?>
-    <? break; ?>
-  <? case 1: ?>
-    <?= "i equals 1"; ?>
-    <? break; ?>
-  <? case 2: ?>
-    <?= "i equals 2"; ?>
-    <? break; ?>
-<? endswitch; ?>
-
-<? declare(ticks=1): ?>
-<? enddeclare; ?>
-
-<br />
-
 {BoldBlock name='Joe' items=$items} Hello: {/BoldBlock} it is {TimeSlice}
 
 {* This is a comment *}
