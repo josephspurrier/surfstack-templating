@@ -78,7 +78,7 @@ slices. The blocks do work over multiple lines.
 Here is an example of a block and slice you could place in your template.
 
 ```
-{BoldBlock name='Joe' items=$items} Hello: {/BoldBlock} it is {TimeSlice}
+{BoldBlock name='World'}Hello{/BoldBlock} it is {TimeSlice}
 ```
 
 And here is the class you could write. Name it BoldBlock.php and place it in your
@@ -91,7 +91,7 @@ class BoldBlock extends Block
 {
     function render($strContent, $arrData)
     {
-        return '<strong>'.$strContent.'</strong>'.$arrData['name'];
+        return '<strong>'.$strContent.'</strong> '.$arrData['name'];
     }
 }
 ```
@@ -111,7 +111,7 @@ class TimeSlice extends Slice
 }
 ```
 
-The template will then output: **Hello:** Joe it is Thursday 17th of April 2014 04:47:56 AM
+The template will then output: **Hello** World it is Thursday 17th of April 2014 04:47:56 AM
 
 # Comparison of Syntax
 
@@ -193,10 +193,12 @@ This is a multi line comment
 
 <? require 'header.tpl'; ?>
 
-<? if ($items): ?>
+<? if (is_array($items)): ?>
   <? foreach ($items as $item): ?>
     * <?= $item ?>
   <? endforeach; ?>
+<? elseif (is_string($items)): ?>
+  Items is a string, should be an array.
 <? else: ?>
   No item has been found.
 <? endif; ?>
@@ -249,10 +251,12 @@ This is a multi line comment
 
 <?php require 'header.tpl'; ?>
 
-<?php if ($items): ?>
+<?php if (is_array($items)): ?>
   <?php foreach ($items as $item): ?>
     * <?php echo $item ?>
   <?php endforeach; ?>
+<?php elseif (is_string($items)): ?>
+  Items is a string, should be an array.
 <?php else: ?>
   No item has been found..
 <?php endif; ?>

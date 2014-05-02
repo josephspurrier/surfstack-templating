@@ -41,17 +41,10 @@ class Template_Engine
     /**
      * Create class instance
      * @param string $template Template path
-     * @throws \ErrorException Throws error if template is not found
      */
     function __construct($template)
     {
-        if (!is_file(stream_resolve_include_path($template)))
-        {
-            throw new \ErrorException('The template, '.$template.', cannot be found.');
-        }
-    
-        // Store the template full path
-        $this->template = stream_resolve_include_path($template);
+        $this->setTemplate($template);
         
         // Set the default settings
         $this->internal = array(
@@ -59,9 +52,25 @@ class Template_Engine
             'StripWhitespace' => true,
             'LoadPlugins' => true,
         );
+    }
+    
+    /**
+     * Set the template
+     * @param string $template Template path
+     * @throws \ErrorException
+     */
+    function setTemplate($template)
+    {
+        if (!is_file(stream_resolve_include_path($template)))
+        {
+            throw new \ErrorException('The template, '.$template.', cannot be found.');
+        }
+        
+        // Store the template full path
+        $this->template = stream_resolve_include_path($template);
         
         // Set the include path to include the template directory
-        set_include_path(get_include_path().PATH_SEPARATOR.dirname(realpath($template)));
+        set_include_path(get_include_path().PATH_SEPARATOR.dirname($this->template));
     }
 
     /**
@@ -239,6 +248,15 @@ class Template_Engine
     }
     
     /**
+     * Return the assigned variables which will be passed to template
+     * @return array
+     */
+    function getAssigned()
+    {
+        return $this->variables;
+    }
+    
+    /**
      * Unassign a variable to be passed to template
      * @param string $key
      */
@@ -276,6 +294,8 @@ class Template_Engine
     {
         $stripSpace = $this->getStripWhitespace();
         
+        $stripTags = array();
+        
         if ($this->getInternal('StripTags'))
         {            
             $stripTags = array(
@@ -289,7 +309,7 @@ class Template_Engine
         }
         
         // Strip multi-line comments
-        $stripTags[] = '/'.$stripSpace.'\{\*(.[^\}\{]*?)\*\}'.$stripSpace.'/s';
+        //$stripTags[] = '/'.$stripSpace.'\{\*(.[^\}\{]*?)\*\}'.$stripSpace.'/s';
         
         return preg_replace($stripTags, '', $content);
     }
@@ -316,37 +336,34 @@ class Template_Engine
      * @throws \ErrorException
      * @return string
      */
-    protected function embedIncludeRequire($matches)
+    protected function embedIncludeRequire(array $matches)
     {
-        if (isset($matches[1]))
-        {
-            // Strip quotes
-            $match = str_replace(array('"',"'"), '', $matches[1]);
+        // Strip quotes
+        $match = str_replace(array('"',"'"), '', $matches[1]);
         
-            // If the file is found
-            if (is_file(stream_resolve_include_path($match)))
+        // If the file is found
+        if (is_file(stream_resolve_include_path($match)))
+        {
+            // Generate a new instance of this class
+            $class = new self(stream_resolve_include_path($match));
+            
+            // Set the cache folder
+            $class->setCacheDir($this->getCacheDir());
+            
+            // If the cache is not current
+            if (!$class->isCacheCurrent())
             {
-                // Generate a new instance of this class
-                $class = new self(stream_resolve_include_path($match));
-                
-                // Set the cache folder
-                $class->setCacheDir($this->getCacheDir());
-                
-                // If the cache is not current
-                if (!$class->isCacheCurrent())
-                {
-                    // Update the cahce
-                    $class->updateCache();
-                }
-                
-                // Return the full path to the template
-                return "{require '".realpath($class->getCachedTemplate())."'}";
-                
+                // Update the cahce
+                $class->updateCache();
             }
-            else
-            {
-                throw new \ErrorException("The file, {$matches[1]}, cannot found in the template folder.");
-            }
+            
+            // Return the full path to the template
+            return "{require '".realpath($class->getCachedTemplate())."'}";
+            
+        }
+        else
+        {
+            throw new \ErrorException("The file, {$matches[1]}, cannot found in the template folder.");
         }
     }
     
@@ -384,13 +401,13 @@ class Template_Engine
         {
             if ($this->getInternal('PluginDir'))
             {
-                require $this->getInternal('PluginDir').'/Block.php';
-                require $this->getInternal('PluginDir').'/Slice.php';
+                require_once $this->getInternal('PluginDir').'/Block.php';
+                require_once $this->getInternal('PluginDir').'/Slice.php';
             
                 foreach(glob($this->getInternal('PluginDir').'/*.php') as $file)
                 {
                     $f = basename($file);
-            
+                    
                     if (!in_array($f, array('Block.php', 'Slice.php')))
                     {
                         $name = str_replace('.php', '', $f);
@@ -404,7 +421,7 @@ class Template_Engine
                             $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
                         }
             
-                        require $file;
+                        require_once $file;
                     }
                 }
             }
@@ -480,23 +497,21 @@ class Template_Engine
             $pluginContent = $matches[3];
             
             return <<< OUTPUT
-        <?php
-        // Call the plugin
-        \$plugin = '\SurfStack\Templating\Plugin\\\'.'$pluginName';
-        \$class = new \$plugin();
-        echo \$class->render('$pluginContent', $arrOut);
-        ?>
+<?php
+\$plugin = '\SurfStack\Templating\Plugin\\\'.'$pluginName';
+\$class = new \$plugin();
+echo \$class->render('$pluginContent', $arrOut);
+?>
 OUTPUT;
         }
         else
         {
             return <<< OUTPUT
-        <?php
-        // Call the plugin
-        \$plugin = '\SurfStack\Templating\Plugin\\\'.'$pluginName';
-        \$class = new \$plugin();
-        echo \$class->render($arrOut);
-        ?>
+<?php
+\$plugin = '\SurfStack\Templating\Plugin\\\'.'$pluginName';
+\$class = new \$plugin();
+echo \$class->render($arrOut);
+?>
 OUTPUT;
         }
     }
@@ -545,10 +560,11 @@ OUTPUT;
 
         // Replace the outliers
         $custom = array(
-            '<?php echo htmlentities($1, ENT_QUOTES, "UTF-8") ?>' => '/\{=e\s*(.*)\}/',
-            '<?php echo $1 ?>' => '/\{=\s*(.*?)\}/',
+            '/*$1*/' => '/\{\*(.[^\}\{]*?)\*\}/s',
+            '<?php echo htmlentities($1, ENT_QUOTES, "UTF-8"); ?>' => '/\{=e\s*(.*)\}/',
+            '<?php echo $1; ?>' => '/\{=\s*(.*?)\}/',
             '<?php case $1: ?>' => '/\{\s*case\s*(.*?)\}/',
-            '<?php switch $1: $2 : ?>' => '/\{\s*switch\s*(.*?)\n(.*?)\}/s',
+            '<?php switch $1:'.PHP_EOL.'$2: ?>' => '/\{\s*switch\s*(.[^'.PHP_EOL.']*?)'.PHP_EOL.'(.*?)\}/',
             '<?php $$1; ?>' => '/\{\s*\$\s*(.*?)\}/',
         );
         
