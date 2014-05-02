@@ -107,7 +107,7 @@ class Template_Engine
      */
     function setCacheDir($path)
     {
-        $this->setInternal('CompiledDir', trim($path, '/'));
+        $this->setInternal('CompiledDir', rtrim($path, '/'));
     }
     
     /**
@@ -116,7 +116,7 @@ class Template_Engine
      */
     function setPluginDir($path)
     {
-        $this->setInternal('PluginDir', trim($path, '/'));
+        $this->setInternal('PluginDir', rtrim($path, '/'));
     }
     
     /**
