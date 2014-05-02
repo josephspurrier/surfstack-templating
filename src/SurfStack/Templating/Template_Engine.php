@@ -128,10 +128,17 @@ class Template_Engine
     /**
      * Set the path of the plugin dir
      * @param string $path
+     * @throws \ErrorException
      */
     function setPluginDir($path)
     {
-        $this->setInternal('PluginDir', rtrim(realpath($path), '/'));
+        if (!is_dir(stream_resolve_include_path($path)))
+        {
+            throw new \ErrorException('The path, '.$path.', cannot be found.');
+        }
+        
+        // Store the full path
+        $this->setInternal('PluginDir', rtrim(stream_resolve_include_path($path), '/'));
     }
     
     /**
@@ -211,10 +218,16 @@ class Template_Engine
     /**
      * Set the path of the cache dir
      * @param string $path
+     * @throws \ErrorException
      */
     function setCacheDir($path)
     {
-        $this->setInternal('CacheDir', rtrim(realpath($path), '/'));
+        if (!is_dir(stream_resolve_include_path($path)))
+        {
+            throw new \ErrorException('The path, '.$path.', cannot be found.');
+        }
+        
+        $this->setInternal('CacheDir', rtrim(stream_resolve_include_path($path), '/'));
     }
     
     /**
@@ -320,10 +333,16 @@ class Template_Engine
     /**
      * Set the path of the compile dir
      * @param string $path
+     * @throws \ErrorException
      */
     function setCompileDir($path)
     {
-        $this->setInternal('CompileDir', rtrim(realpath($path), '/'));
+        if (!is_dir(stream_resolve_include_path($path)))
+        {
+            throw new \ErrorException('The path, '.$path.', cannot be found.');
+        }
+        
+        $this->setInternal('CompileDir', rtrim(stream_resolve_include_path($path), '/'));
     }
     
     /**

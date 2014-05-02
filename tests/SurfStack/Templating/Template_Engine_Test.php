@@ -105,6 +105,30 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {
         $this->view = new SurfStack\Templating\Template_Engine(__DIR__.'/template/templateNotExist.tpl');
     }
+    
+    /**
+     * @expectedException ErrorException
+     */
+    public function testPluginDirMissing()
+    {
+        $this->view->setPluginDir('nowhere');
+    }
+    
+    /**
+     * @expectedException ErrorException
+     */
+    public function testCacheDirMissing()
+    {
+        $this->view->setCacheDir('nowhere');
+    }
+    
+    /**
+     * @expectedException ErrorException
+     */
+    public function testCompileDirMissing()
+    {
+        $this->view->setCompileDir('nowhere');
+    }
 
     public function testOutputText()
     {
