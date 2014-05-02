@@ -805,6 +805,9 @@ OUTPUT;
         // Else caching is not enabled
         else
         {
+            // Load the plugins
+            $this->loadPlugins();
+            
             // If the compile is current
             if ($this->isCompileCurrent())
             {
@@ -819,9 +822,6 @@ OUTPUT;
                 // Update the compile
                 $this->updateCompile();
             }
-            
-            // Load the plugins
-            $this->loadPlugins();
             
             // Extract the variables
             extract($this->variables);
