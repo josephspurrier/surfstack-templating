@@ -3,10 +3,10 @@
 namespace SurfStack\Templating\Plugin;
 use SurfStack\Templating\Core\Slice;
 
-class Time extends Slice
+class Blank extends Slice
 {
     function render()
     {
-        return date('Y');
+        return 'blank';
     }
 }

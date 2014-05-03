@@ -42,7 +42,7 @@ class Template_Engine
      * Create class instance
      * @param string $template Template path
      */
-    function __construct($template)
+    function __construct($path, $template)
     {
         // Set the default settings
         $this->internal = array(
@@ -54,6 +54,7 @@ class Template_Engine
             'AlwaysCheckOriginal' => false,
         );
         
+        $this->setTemplateDir($path);
         $this->setTemplate($template);
     }
     
@@ -71,15 +72,6 @@ class Template_Engine
         
         // Store the template full path
         $this->template = stream_resolve_include_path($template);
-        
-        // Store the template directory
-        $this->setInternal('TemplateDir', dirname($this->template));
-        
-        if (strstr(get_include_path(), dirname($this->template)) === false)
-        {
-            // Set the include path to include the template directory
-            set_include_path(get_include_path().PATH_SEPARATOR.dirname($this->template));
-        }
     }
 
     /**
@@ -142,6 +134,30 @@ class Template_Engine
         
         // Store the full path
         $this->setInternal('PluginDir', rtrim(stream_resolve_include_path($path), '/'));
+    }
+    
+    /**
+     * Set the path of the template dir
+     * @param string $path
+     * @throws \ErrorException
+     */
+    function setTemplateDir($path)
+    {
+        if (!is_dir(stream_resolve_include_path($path)))
+        {
+            throw new \ErrorException('The path, '.$path.', cannot be found.');
+        }
+    
+        $realpath = rtrim(stream_resolve_include_path($path), '/');
+        
+        // Store the full path
+        $this->setInternal('TemplateDir', $realpath);
+
+        if (strstr(get_include_path(), $realpath) === false)
+        {
+            // Set the include path to include the template directory
+            set_include_path(get_include_path().PATH_SEPARATOR.$realpath);
+        }
     }
     
     /**
@@ -535,7 +551,7 @@ class Template_Engine
         if (is_file(stream_resolve_include_path($match)))
         {
             // Generate a new instance of this class
-            $class = new self(stream_resolve_include_path($match));
+            $class = new self($this->getInternal('TemplateDir'), stream_resolve_include_path($match));
             
             // Copy over the settings
             $class->setInternals($this->getInternals());
@@ -632,13 +648,67 @@ class Template_Engine
             }
             else
             {
-                $arrOut .= "'$key'=>'$val',";
+                $escapedVal = str_replace("'", "\'", $val);
+            
+                $arrOut .= "'$key'=>'$escapedVal',";
             }
         }
         
         $arrOut .= ')';
         
         return $arrOut;
+    }
+    
+    /**
+     * Parse a string of name='value' and convert to an array
+     * @param string $strData
+     * @return array
+     */
+    protected function parsePluginVariables($strData)
+    {
+        $arr = array();
+        
+        // Extract the variables
+        if(preg_match_all('/(\w+=\'[^\']*\'|\w+=\"[^"]*"|\w+=[^\s]*)+/', $strData, $m))
+        {
+            foreach($m[0] as $key => $k)
+            {
+                $arrSplit = explode('=', $k);
+        
+                $arr[$arrSplit[0]] = trim(join('', array_slice($arrSplit, 1)), '\'\"');
+            }
+        }
+        
+        return $arr;
+    }
+    
+    /**
+     * Escape single quotes
+     * @param string $string
+     * @return string
+     */
+    protected function safeString($string)
+    {
+        return str_replace("'", '/', $string);
+    }
+    
+    /**
+     * Get the class and parent classes file paths
+     * @param string $class
+     */
+    protected function getRequiredClasses($class)
+    {
+        $arrRequire = '';
+        
+        do
+        {
+            $rc = new \ReflectionClass($class);
+            $arrRequire[] = "require_once '{$this->safeString($rc->getFileName())}';";
+            $class = get_parent_class($class);
+        
+        } while ($class);
+        //return '';
+        return join(PHP_EOL, array_reverse($arrRequire));
     }
     
     /**
@@ -650,57 +720,25 @@ class Template_Engine
     {
         $pluginName = $matches[1];
         $pluginData = $matches[2];
+        // Block has content, Slice does not
+        $pluginContent = (isset($matches[3]) ? "'".addslashes($matches[3])."'" : '');
+
+        // Get the variables as a renderable array
+        $sPassed = $this->buildRenderableArray($this->parsePluginVariables($pluginData));
         
-        $arr = array();
+        // Get the requires classes as strings
+        $require = $this->getRequiredClasses('\SurfStack\Templating\Plugin\\'.$pluginName);
         
-        if(preg_match_all('/(\w+=\'[^\']*\'|\w+=\"[^"]*"|\w+=[^\s]*)+/', $pluginData, $m))
-        {
-            foreach($m[0] as $key => $k)
-            {
-                $arrSplit = explode('=', $k);
-                
-                $arr[$arrSplit[0]] = trim(join('', array_slice($arrSplit, 1)), '\'\"');
-            }
-        }
-        
-        // Assign variables to the variables
-        foreach($arr as &$val)
-        {
-            if (isset($this->variables[$val]))
-            {
-                $val = '$'."$val";
-            }
-        }
-        
-        $arrOut = $this->buildRenderableArray($arr);
-        
-        $arrInternal = $this->buildRenderableArray($this->internal);
-        
-        // Block
-        if (isset($matches[3]))
-        {
-            $pluginContent = $matches[3];
-            
-            return <<< OUTPUT
+        return <<< OUTPUT
 <?php
-\$plugin = '\SurfStack\Templating\Plugin\\\'.'$pluginName';
-\$class = new \$plugin();
-\$class->internal = $arrInternal;
-echo \$class->render('$pluginContent', $arrOut);
+$require
+\$class = new \SurfStack\Templating\Plugin\\$pluginName();
+\$class->store('arrEngineVariables', \$this->variables);
+\$class->store('arrEngineInternals', \$this->internal);
+\$class->store('arrPluginVariables', $sPassed);
+echo \$class->render($pluginContent);
 ?>
 OUTPUT;
-        }
-        else
-        {
-            return <<< OUTPUT
-<?php
-\$plugin = '\SurfStack\Templating\Plugin\\\'.'$pluginName';
-\$class = new \$plugin();
-\$class->internal = $arrInternal;
-echo \$class->render($arrOut);
-?>
-OUTPUT;
-        }
     }
         
     /**
@@ -764,12 +802,70 @@ OUTPUT;
         return preg_replace_callback(array_values($arrPlugins), array($this, 'callPluginDynamic'), $content);
         //return preg_replace_callback(array_values($arrPlugins), array($this, 'callPluginStatic'), $content);
     }
-
+    
+    /**
+     * Determines if the template has any non-fatal problems
+     * @return boolean
+     */
+    function isTemplateValid()
+    {        
+        $this->error = true;
+        
+        set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+            $this->error = false;            
+            return true;
+        });
+        
+        // If the compile is not current
+        if (!$this->isCompileCurrent())
+        {
+            // Update the compile
+            $this->updateCompile();
+        }
+        
+        // Extract the variables
+        extract($this->variables);
+        
+        ob_start();
+        @require $this->getCompiledTemplate();
+        ob_end_clean();
+        
+        restore_error_handler();
+        
+        return $this->error;
+    }
+    
+    /**
+     * Returns an array of error information from error_get_last() for the template
+     * or an empty array if successful
+     * @return array
+     */
+    function getCompileTemplateError()
+    {
+        // If the compile is not current
+        if (!$this->isCompileCurrent())
+        {
+            // Update the compile
+            $this->updateCompile();
+        }
+        
+        // Extract the variables
+        extract($this->variables);
+        
+        ob_start();
+        @require $this->getCompiledTemplate();
+        ob_end_clean();
+        
+        $error = error_get_last();
+        
+        return (is_null($error) ? array() : $error);
+    }
+    
     /**
      * Render the template (compile and caching logic)
      */
     function render()
-    {
+    {        
         // Marked them as null for testing purposes
         $this->setInternal('WasCached', null);
         $this->setInternal('WasCompiled', null);
@@ -823,7 +919,7 @@ OUTPUT;
         }
         // Else caching is not enabled
         else
-        {            
+        {
             // If the compile is current
             if ($this->isCompileCurrent())
             {
@@ -841,7 +937,7 @@ OUTPUT;
             
             // Extract the variables
             extract($this->variables);
-        
+
             // Render the compile
             require $this->getCompiledTemplate();
         }   

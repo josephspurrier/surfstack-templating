@@ -3,10 +3,10 @@
 namespace SurfStack\Templating\Plugin;
 use SurfStack\Templating\Core\Block;
 
-class Bold extends Block
+class Passthru extends Block
 {
     function render($strContent)
-    {
-        return '<strong>'.$strContent.'</strong> '.$this->arrPluginVariables['name'];
+    {        
+        return $this->arrPluginVariables['pass'];
     }
 }

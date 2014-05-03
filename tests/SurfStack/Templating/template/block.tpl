@@ -1,1 +1,1 @@
-{Bold name='world'}Hello{/Bold}!
+{Bold name='world' class=$obj array=$items}Hello{/Bold}!

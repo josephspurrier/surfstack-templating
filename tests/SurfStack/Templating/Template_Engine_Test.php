@@ -23,23 +23,38 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
     protected function setUp()
     {
-        $this->view = new SurfStack\Templating\Template_Engine(__DIR__.'/template/template.tpl');
+        $this->view = new SurfStack\Templating\Template_Engine(__DIR__.'/template/', 'template.tpl');
         
         $this->view->setCompileDir(__DIR__.'/template_compile');
         $this->view->setCacheDir(__DIR__.'/template_cache');
-        $this->view->setPluginDir(__DIR__.'/Plugin');
+        $this->view->setPluginDir(__DIR__.'/plugin');
         
         $this->view->clearCompile();
         $this->view->clearCache();
         
-        $this->view->setLoadPlugins(true);
+        //$this->view->setLoadPlugins(true);
         
         $items = array(
-        'item1' => 'i1z',
-        'item2' => 'i2',
+        'item1' => 'hello',
+        'item2' => 'world',
         );
         
         $this->view->assign('items', $items);
+        
+        $deep = array(
+            'item1' => 'hello',
+            'item2' => array(
+                'obj' => new stdClass(),
+            ),
+        );
+        
+        $this->view->assign('deep', $deep);
+        
+        $obj = new stdClass();
+        $obj->item1 = 'hello';
+        $obj->item2 = 'world';
+        
+        $this->view->assign('obj', $obj);
     }
     
     protected function tearDown()
@@ -58,8 +73,6 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
     public function testCompiling()
     {
-        $this->view->clearCompile();
-
         $this->render();
         
         $this->assertFalse($this->view->wasCompileCurrent());
@@ -102,8 +115,16 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
      * @expectedException ErrorException
      */
     public function testTemplateNotExist()
+    {        
+        $this->view->setTemplate('templateNotExist.tpl');
+    }
+    
+    /**
+     * @expectedException ErrorException
+     */
+    public function testTemplateDirMissing()
     {
-        $this->view = new SurfStack\Templating\Template_Engine(__DIR__.'/template/templateNotExist.tpl');
+        $this->view->setTemplateDir('nowhere');
     }
     
     /**
@@ -249,7 +270,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
     public function testNoLoadPlugins()
     {        
-        $this->expectOutputString("{Bold name='world'}Hello{/Bold}!");
+        $this->expectOutputString("{Bold name='world' class=\$obj array=\$items}Hello{/Bold}!");
         
         $this->view->setTemplate(__DIR__.'/template/block.tpl');
         
@@ -277,6 +298,25 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->view->render();
     }
     
+    public function testVariableBlock()
+    {
+        $this->expectOutputString('Hello world.');
+        
+        $this->view->clear();
+        
+        $this->view->assign('test', 'Hello world');
+    
+        $this->view->setTemplate(__DIR__.'/template/blockVariable.tpl');
+    
+        $this->view->setLoadPlugins(true);
+    
+        $this->view->setStripTags(false);
+    
+        $this->view->setStripWhitespace(false);
+    
+        $this->view->render();
+    }
+    
     public function testSlice()
     {
         $this->expectOutputString(date('Y'));
@@ -292,6 +332,37 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->view->render();
     }
 
+    public function testVariableSliceBad()
+    {
+        $this->view->setLoadPlugins(true);
+    
+        $this->view->setTemplate('sliceVariable.tpl');
+    
+        $this->assertFalse($this->view->isTemplateValid());
+    }
+    
+    public function testVariableSliceBadMessage()
+    {
+        $this->view->setLoadPlugins(true);
+    
+        $this->view->setTemplate('sliceVariable.tpl');
+    
+        $arr = $this->view->getCompileTemplateError();
+        
+        $this->assertSame($arr['message'], 'Undefined variable: missing');
+    }
+    
+    public function testVariableSliceGood()
+    {
+        $this->view->setLoadPlugins(true);
+    
+        $this->view->assign('missing', 'notmissing');
+    
+        $this->view->setTemplate('sliceVariable.tpl');
+    
+        $this->assertTrue($this->view->isTemplateValid());
+    }
+    
     public function testNoCacheTemplates()
     {
         $this->view->setCacheTemplates(false);

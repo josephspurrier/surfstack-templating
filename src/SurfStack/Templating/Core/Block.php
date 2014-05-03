@@ -9,26 +9,19 @@
  * @license http://www.apache.org/licenses/LICENSE-2.0.html
  */
 
-namespace SurfStack\Templating\Plugin;
+namespace SurfStack\Templating\Core;
 
 /**
  * SurfStack Template Engine Block
  *
-* Renders content in a template.
-* Designated by a single {name} tag.
+ * Renders content in a template.
+ * Designated by a single {name} tag.
  */
-abstract class Block
-{
-    /**
-     * Array of settings from Template Engine
-     * @var array
-     */
-    public $internal = array();
-    
+abstract class Block extends PluginBase
+{    
     /**
      * Called by the template, expects a return value
-     * @param string $strContent
-     * @param array $arrData
+     * @param string $strContent Content written between the tags
      */
-    abstract function render($strContent, $arrData);
+    abstract function render($strContent);
 }

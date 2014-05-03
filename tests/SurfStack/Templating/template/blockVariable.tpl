@@ -1,0 +1,1 @@
+{Passthru pass=$test}Variable: {/Passthru}.

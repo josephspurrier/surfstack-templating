@@ -9,7 +9,7 @@
  * @license http://www.apache.org/licenses/LICENSE-2.0.html
  */
 
-namespace SurfStack\Templating\Plugin;
+namespace SurfStack\Templating\Core;
 
 /**
  * SurfStack Template Engine Slice
@@ -17,17 +17,10 @@ namespace SurfStack\Templating\Plugin;
  * Renders content in a template.
  * Designated by an open {name} and close {/name} tag.
  */
-abstract class Slice
-{
-    /**
-     * Array of settings from Template Engine
-     * @var array
-     */
-    public $internal = array();
-    
+abstract class Slice extends PluginBase
+{    
     /**
      * Called by the template, expects a return value
-     * @param array $arrData
      */
-    abstract function render($arrData);
+    abstract function render();
 }

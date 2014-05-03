@@ -1,0 +1,1 @@
+{extend file='parent.tpl'}
