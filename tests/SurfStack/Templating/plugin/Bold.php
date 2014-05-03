@@ -2,7 +2,7 @@
 
 namespace SurfStack\Templating\Plugin;
 
-class BoldBlock extends Block
+class Bold extends Block
 {
     function render($strContent, $arrData)
     {

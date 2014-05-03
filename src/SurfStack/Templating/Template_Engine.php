@@ -44,8 +44,6 @@ class Template_Engine
      */
     function __construct($template)
     {
-        $this->setTemplate($template);
-        
         // Set the default settings
         $this->internal = array(
             'StripTags' => false,
@@ -55,6 +53,8 @@ class Template_Engine
             'CacheLifetime' => 3600,
             'AlwaysCheckOriginal' => false,
         );
+        
+        $this->setTemplate($template);
     }
     
     /**
@@ -71,6 +71,9 @@ class Template_Engine
         
         // Store the template full path
         $this->template = stream_resolve_include_path($template);
+        
+        // Store the template directory
+        $this->setInternal('TemplateDir', dirname($this->template));
         
         if (strstr(get_include_path(), dirname($this->template)) === false)
         {
@@ -590,20 +593,21 @@ class Template_Engine
             {
                 foreach(glob($this->getInternal('PluginDir').'/*.php') as $file)
                 {
-                    $f = basename($file);
-                    
-                    $name = str_replace('.php', '', $f);
-        
-                    if (strpos($f, 'Block.php') !== false)
-                    {
-                        $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.[^\}\{]*?)\{\/\s*'.$name.'\s*\}/i';
-                    }
-                    else if (strpos($f, 'Slice.php') !== false)
-                    {
-                        $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
-                    }
-        
                     require_once $file;
+                    
+                    $name = str_replace('.php', '', basename($file));
+                    
+                    $parent = basename(get_parent_class('\SurfStack\Templating\Plugin\\'.$name));
+                    
+                    switch ($parent)
+                    {
+                    	case 'Block':
+                    	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.[^\}\{]*?)\{\/\s*'.$name.'\s*\}/i';
+                    	    break;
+                    	case 'Slice':
+                    	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
+                    	    break;
+                    }
                 }
             }
         }
@@ -649,15 +653,14 @@ class Template_Engine
         
         $arr = array();
         
-        // Break into words
-        if(preg_match_all('/(\w+|"[\w\s]*"|\'[\w\s]*\')+/', $pluginData, $m))
+        if(preg_match_all('/(\w+=\'[^\']*\'|\w+=\"[^"]*"|\w+=[^\s]*)+/', $pluginData, $m))
         {
+            
             foreach($m[0] as $key => $k)
             {
-                if ($key % 2 != 0)
-                {
-                    $arr[trim($m[0][$key-1], '"..\'')] = trim($k, '"..\'');
-                }
+                $arrSplit = explode('=', $k);
+                
+                $arr[$arrSplit[0]] = trim(join('', array_slice($arrSplit, 1)), '\'\"');
             }
         }
         
@@ -672,6 +675,8 @@ class Template_Engine
         
         $arrOut = $this->buildRenderableArray($arr);
         
+        $arrInternal = $this->buildRenderableArray($this->internal);
+        
         // Block
         if (isset($matches[3]))
         {
@@ -681,6 +686,7 @@ class Template_Engine
 <?php
 \$plugin = '\SurfStack\Templating\Plugin\\\'.'$pluginName';
 \$class = new \$plugin();
+\$class->internal = $arrInternal;
 echo \$class->render('$pluginContent', $arrOut);
 ?>
 OUTPUT;
@@ -691,6 +697,7 @@ OUTPUT;
 <?php
 \$plugin = '\SurfStack\Templating\Plugin\\\'.'$pluginName';
 \$class = new \$plugin();
+\$class->internal = $arrInternal;
 echo \$class->render($arrOut);
 ?>
 OUTPUT;

@@ -2,7 +2,7 @@
 
 namespace SurfStack\Templating\Plugin;
 
-class TimeSlice extends Slice
+class Time extends Slice
 {
     function render($arrData)
     {

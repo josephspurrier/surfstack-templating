@@ -1,1 +1,1 @@
-{BoldBlock name='world'}Hello{/BoldBlock}!
+{Bold name='world'}Hello{/Bold}!

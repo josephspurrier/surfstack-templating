@@ -118,16 +118,16 @@ slices. The blocks do work over multiple lines.
 Here is an example of a block and slice you could place in your template.
 
 ```
-{BoldBlock name='World'}Hello{/BoldBlock} it is {TimeSlice}
+{Bold name='World'}Hello{/Bold} it is {Time}
 ```
 
-And here is the class you could write. Name it BoldBlock.php and place it in your
+And here is the class you could write. Name it Bold.php and place it in your
 plugin folder.
 
 ```php
 namespace SurfStack\Templating\Plugin;
 
-class BoldBlock extends Block
+class Bold extends Block
 {
     function render($strContent, $arrData)
     {
@@ -136,13 +136,13 @@ class BoldBlock extends Block
 }
 ```
 
-Here is the code for the slice. Name it TimeSlice.php and place it in your plugin
+Here is the code for the slice. Name it Time.php and place it in your plugin
 folder.
 
 ```php
 namespace SurfStack\Templating\Plugin;
 
-class TimeSlice extends Slice
+class Time extends Slice
 {
     function render($arrData)
     {

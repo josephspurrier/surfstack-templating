@@ -249,7 +249,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
     public function testNoLoadPlugins()
     {        
-        $this->expectOutputString("{BoldBlock name='world'}Hello{/BoldBlock}!");
+        $this->expectOutputString("{Bold name='world'}Hello{/Bold}!");
         
         $this->view->setTemplate(__DIR__.'/template/block.tpl');
         
