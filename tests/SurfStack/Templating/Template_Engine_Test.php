@@ -356,8 +356,31 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->render();
         
-        $this->assertTrue($this->view->pre);
         $this->assertTrue($this->view->post);
+    }
+    
+    public function testPlugRex()
+    {
+        $this->view->clear();
+    
+        $this->view->assign('test', 'Hello world');
+    
+        $this->view->setTemplate('blockVariable.tpl');
+    
+        $this->view->setLoadPlugins(true);
+    
+        $this->view->setStripTags(false);
+    
+        $this->view->setStripWhitespace(false);
+    
+        $this->render();
+    
+        $this->assertSame($this->view->plugrex, array(
+            0 => '/\{\s*(Blank)\s*(.*?)\}/i',
+            1 => '/\{\s*(Bold)\s*(.*?)\}(.[^\}\{]*?)\{\/\s*Bold\s*\}/i',
+            2 => '/\{\s*(Passthru)\s*(.*?)\}(.[^\}\{]*?)\{\/\s*Passthru\s*\}/i',
+            3 => '/\{\s*(Time)\s*(.*?)\}/i',
+        ));
     }
     
     public function testSlice()
