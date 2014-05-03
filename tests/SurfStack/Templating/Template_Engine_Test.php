@@ -298,6 +298,29 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->view->render();
     }
     
+    public function testLoadPluginsArray()
+    {        
+        $this->view->setLoadPlugins(true);
+    
+        $this->render();
+        
+        $this->assertSame($this->view->getLoadedPlugins(), array(
+            'Blank',
+            'Bold',
+            'Passthru',
+            'Time',
+        ));
+    }
+    
+    public function testLoadPluginsCount()
+    {
+        $this->view->setLoadPlugins(true);
+    
+        $this->render();
+    
+        $this->assertSame($this->view->getNumberLoadedPlugins(), 4);
+    }
+    
     public function testVariableBlock()
     {
         $this->expectOutputString('Hello world.');

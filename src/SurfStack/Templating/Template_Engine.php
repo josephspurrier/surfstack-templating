@@ -52,6 +52,8 @@ class Template_Engine
             'CacheTemplates' => false,
             'CacheLifetime' => 3600,
             'AlwaysCheckOriginal' => false,
+            'PluginCount' => 0,
+            'PluginsLoaded' => array(),
         );
         
         $this->setTemplateDir($path);
@@ -100,6 +102,26 @@ class Template_Engine
     protected function setInternal($key, $value)
     {
         $this->internal[$key] = $value;
+    }
+    
+    /**
+     * Increment internal variable
+     * @param string $key
+     * @param int $int
+     */
+    protected function incrementInternal($key, $int = 1)
+    {
+        $this->internal[$key] += intval($int);
+    }
+    
+    /**
+     * Added to internal variable array
+     * @param string $key
+     * @param string $value
+     */
+    protected function pushInternal($key, $value)
+    {
+        $this->internal[$key][] = $value;
     }
     
     /**
@@ -607,6 +629,9 @@ class Template_Engine
         {
             if ($this->getInternal('PluginDir'))
             {
+                $this->setInternal('PluginCount', 0);
+                $this->setInternal('PluginsLoaded', array());
+                
                 foreach(glob($this->getInternal('PluginDir').'/*.php') as $file)
                 {
                     require_once $file;
@@ -624,11 +649,32 @@ class Template_Engine
                     	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
                     	    break;
                     }
+                    
+                    $this->incrementInternal('PluginCount');
+                    $this->pushInternal('PluginsLoaded', $name);
                 }
             }
         }
 
         return $return;
+    }
+    
+    /**
+     * Get an array of loaded plugins
+     * @return array
+     */
+    public function getLoadedPlugins()
+    {
+        return $this->getInternal('PluginsLoaded');
+    }
+    
+    /**
+     * Get the number of loaded plugins
+     * @return int
+     */
+    public function getNumberLoadedPlugins()
+    {
+        return $this->getInternal('PluginCount');
     }
     
     /**
