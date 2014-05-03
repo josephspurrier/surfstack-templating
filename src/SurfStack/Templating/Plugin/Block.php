@@ -26,7 +26,7 @@ abstract class Block
     public $internal = array();
     
     /**
-     * Called by the template, expects a return value
+     * Called by the template, expects a return value 
      * @param string $strContent
      * @param array $arrData
      */

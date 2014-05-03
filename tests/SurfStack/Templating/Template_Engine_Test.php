@@ -27,7 +27,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $this->view->setCompileDir(__DIR__.'/template_compile');
         $this->view->setCacheDir(__DIR__.'/template_cache');
-        $this->view->setPluginDir(__DIR__.'/plugin');
+        $this->view->setPluginDir(__DIR__.'/Plugin');
         
         $this->view->clearCompile();
         $this->view->clearCache();
