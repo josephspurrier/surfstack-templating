@@ -340,6 +340,26 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->view->render();
     }
     
+    public function testPrePost()
+    {    
+        $this->view->clear();
+    
+        $this->view->assign('test', 'Hello world');
+    
+        $this->view->setTemplate('blockVariable.tpl');
+    
+        $this->view->setLoadPlugins(true);
+    
+        $this->view->setStripTags(false);
+    
+        $this->view->setStripWhitespace(false);
+    
+        $this->render();
+        
+        $this->assertTrue($this->view->pre);
+        $this->assertTrue($this->view->post);
+    }
+    
     public function testSlice()
     {
         $this->expectOutputString(date('Y'));

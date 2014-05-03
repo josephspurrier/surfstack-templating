@@ -756,33 +756,44 @@ class Template_Engine
         //return '';
         return join(PHP_EOL, array_reverse($arrRequire));
     }
+
+    public $pre;
+    public $post;
     
     /**
-     * Return the render() function so the compiled template can
-     * call the plugin
-     * @param array $matches
+     * Replace plugin tags with PHP code
+     * @param string $content
+     * @return string
      */
-    protected function callPluginDynamic(array $matches)
+    protected function parsePlugins($content)
     {
-        $pluginName = $matches[1];
-        $pluginData = $matches[2];
-        // Block has content, Slice does not
-        $pluginContent = (isset($matches[3]) ? "'".addslashes($matches[3])."'" : '');
-
-        // Get the variables as a renderable array
-        $sPassed = $this->buildRenderableArray($this->parsePluginVariables($pluginData));
+        $this->pre = true;
+        $this->post = false;
         
-        // Get the requires classes as strings
-        $require = $this->getRequiredClasses('\SurfStack\Templating\Plugin\\'.$pluginName);
+        // Load the plugin content and replace        
+        return preg_replace_callback(array_values($this->loadPlugins()), function($matches) {
+            $pluginName = $matches[1];
+            $pluginData = $matches[2];
+            // Block has content, Slice does not
+            $pluginContent = (isset($matches[3]) ? "'".addslashes($matches[3])."'" : '');
         
-return "<?php $require
-\$class = new \SurfStack\Templating\Plugin\\$pluginName();
-\$class->store('arrEngineVariables', \$this->variables);
-\$class->store('arrEngineInternals', \$this->internal);
-\$class->store('arrPluginVariables', $sPassed);
-echo \$class->render($pluginContent); ?>";
+            // Get the variables as a renderable array
+            $sPassed = $this->buildRenderableArray($this->parsePluginVariables($pluginData));
+        
+            // Get the requires classes as strings
+            $require = $this->getRequiredClasses('\SurfStack\Templating\Plugin\\'.$pluginName);
+            
+            $this->post = true;
+        
+            return "<?php $require
+            \$class = new \SurfStack\Templating\Plugin\\$pluginName();
+            \$class->store('arrEngineVariables', \$this->variables);
+            \$class->store('arrEngineInternals', \$this->internal);
+            \$class->store('arrPluginVariables', $sPassed);
+            echo \$class->render($pluginContent); ?>";
+        }, $content);
     }
-        
+    
     /**
      * Replace custom tags with standard PHP tags
      * @param string $content
@@ -840,10 +851,8 @@ echo \$class->render($pluginContent); ?>";
         $regex = array_merge($regex, $custom);
         $content = preg_replace(array_values($regex), array_keys($regex), $content);
         
-        // Load the plugin content
-        $arrPlugins = $this->loadPlugins();
-        return preg_replace_callback(array_values($arrPlugins), array($this, 'callPluginDynamic'), $content);
-        //return preg_replace_callback(array_values($arrPlugins), array($this, 'callPluginStatic'), $content);
+        // Replace the plugin tags
+        return $this->parsePlugins($content);
     }
     
     /**
