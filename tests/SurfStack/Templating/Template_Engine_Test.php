@@ -32,8 +32,6 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->view->clearCompile();
         $this->view->clearCache();
         
-        //$this->view->setLoadPlugins(true);
-        
         $items = array(
         'item1' => 'hello',
         'item2' => 'world',
@@ -159,22 +157,24 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $this->view->setStripWhitespace(false);
         
-        $this->view->setTemplate(__DIR__.'/template/text.tpl');
+        $this->view->setTemplate('text.tpl');
         
         $this->view->render();
     }
     
     public function testOutputTextStripTags()
     {
-        $this->expectOutputString('Hello world!'.PHP_EOL);
+        $this->expectOutputString('Hello world!'."\n");
         
         $this->view->setStripTags(true);
         
         $this->view->setStripWhitespace(false);
     
         $this->view->setTemplate(__DIR__.'/template/textTag.tpl');
-    
-        $this->view->render();
+        
+        $this->render();
+        
+        echo str_replace("\r\n","\n",$this->output);
     }
     
     public function testOutputTextStripTagsWhitespace()
@@ -185,7 +185,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(true);
     
-        $this->view->setTemplate(__DIR__.'/template/textTagWhitespace.tpl');
+        $this->view->setTemplate('textTagWhitespace.tpl');
     
         $this->view->render();
     }
@@ -198,7 +198,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(false);
     
-        $this->view->setTemplate(__DIR__.'/template/requirer.tpl');
+        $this->view->setTemplate('requirer.tpl');
     
         $this->view->render();
     }
@@ -208,7 +208,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
      */
     public function testOutputRequireMissing()
     {    
-        $this->view->setTemplate(__DIR__.'/template/requireMissing.tpl');
+        $this->view->setTemplate('requireMissing.tpl');
     
         $this->view->render();
     }
@@ -221,7 +221,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(true);
     
-        $this->view->setTemplate(__DIR__.'/template/phpFullTags.tpl');
+        $this->view->setTemplate('phpFullTags.tpl');
     
         $this->view->render();
     }
@@ -234,7 +234,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(true);
     
-        $this->view->setTemplate(__DIR__.'/template/phpShortTags.tpl');
+        $this->view->setTemplate('phpShortTags.tpl');
     
         $this->view->render();
     }
@@ -247,14 +247,14 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(true);
     
-        $this->view->setTemplate(__DIR__.'/template/phpASPTags.tpl');
+        $this->view->setTemplate('phpASPTags.tpl');
     
         $this->view->render();
     }
 
     public function testConversion()
     {
-        $before = __DIR__.'/template/tagBefore.tpl';
+        $before = 'tagBefore.tpl';
         $after = __DIR__.'/template/tagAfter.tpl';
         
         $this->view->setTemplate($before);
@@ -272,7 +272,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {        
         $this->expectOutputString("{Bold name='world' class=\$obj array=\$items}Hello{/Bold}!");
         
-        $this->view->setTemplate(__DIR__.'/template/block.tpl');
+        $this->view->setTemplate('block.tpl');
         
         $this->view->setLoadPlugins(false);
         
@@ -287,7 +287,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {        
         $this->expectOutputString('<strong>Hello</strong> world!');
         
-        $this->view->setTemplate(__DIR__.'/template/block.tpl');
+        $this->view->setTemplate('block.tpl');
         
         $this->view->setLoadPlugins(true);
     
@@ -329,7 +329,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $this->view->assign('test', 'Hello world');
     
-        $this->view->setTemplate(__DIR__.'/template/blockVariable.tpl');
+        $this->view->setTemplate('blockVariable.tpl');
     
         $this->view->setLoadPlugins(true);
     
@@ -344,7 +344,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {
         $this->expectOutputString(date('Y'));
     
-        $this->view->setTemplate(__DIR__.'/template/slice.tpl');
+        $this->view->setTemplate('slice.tpl');
     
         $this->view->setLoadPlugins(true);
         

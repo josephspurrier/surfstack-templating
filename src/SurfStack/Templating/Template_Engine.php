@@ -775,16 +775,12 @@ class Template_Engine
         // Get the requires classes as strings
         $require = $this->getRequiredClasses('\SurfStack\Templating\Plugin\\'.$pluginName);
         
-        return <<< OUTPUT
-<?php
-$require
+return "<?php $require
 \$class = new \SurfStack\Templating\Plugin\\$pluginName();
 \$class->store('arrEngineVariables', \$this->variables);
 \$class->store('arrEngineInternals', \$this->internal);
 \$class->store('arrPluginVariables', $sPassed);
-echo \$class->render($pluginContent);
-?>
-OUTPUT;
+echo \$class->render($pluginContent); ?>";
     }
         
     /**
@@ -835,7 +831,8 @@ OUTPUT;
             '<?php echo htmlentities($1, ENT_QUOTES, "UTF-8"); ?>' => '/\{=e\s*(.*)\}/',
             '<?php echo $1; ?>' => '/\{=\s*(.*?)\}/',
             '<?php case $1: ?>' => '/\{\s*case\s*(.*?)\}/',
-            '<?php switch $1:'.PHP_EOL.'$2: ?>' => '/\{\s*switch\s*(.[^'.PHP_EOL.']*?)'.PHP_EOL.'(.*?)\}/',
+            '<?php switch $1:'."\r\n".'$2: ?>' => '/\{\s*switch\s*(.[^'."\r\n".']*?)'."\r\n".'(.*?)\}/',
+            '<?php switch $1:'."\n".'$2: ?>' => '/\{\s*switch\s*(.[^'."\n".']*?)'."\n".'(.*?)\}/',
             '<?php $$1; ?>' => '/\{\s*\$\s*(.*?)\}/',
         );
         
