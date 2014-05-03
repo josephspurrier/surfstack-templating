@@ -602,8 +602,6 @@ class Template_Engine
                     {
                         $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
                     }
-        
-                    require_once $file;
                 }
             }
         }
@@ -794,9 +792,6 @@ OUTPUT;
                         // Mark the cache as not current
                         $this->setInternal('WasCached', false);
                         
-                        // Load the plugins
-                        $this->loadPlugins();
-                        
                         // Update the compile (and the cache)
                         $this->updateCompile();
                     }
@@ -811,9 +806,6 @@ OUTPUT;
                 // Mark the compile as not current
                 $this->setInternal('WasCompiled', false);
                 
-                // Load the plugins
-                $this->loadPlugins();
-                
                 // Update the compile (and the cache)
                 $this->updateCompile();
             }
@@ -823,10 +815,7 @@ OUTPUT;
         }
         // Else caching is not enabled
         else
-        {
-            // Load the plugins
-            $this->loadPlugins();
-            
+        {            
             // If the compile is current
             if ($this->isCompileCurrent())
             {
