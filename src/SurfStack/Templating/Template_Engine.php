@@ -602,6 +602,8 @@ class Template_Engine
                     {
                         $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
                     }
+        
+                    require_once $file;
                 }
             }
         }
