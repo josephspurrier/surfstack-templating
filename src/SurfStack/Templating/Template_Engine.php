@@ -769,10 +769,11 @@ class Template_Engine
     {
         $this->post = false;
         
-        $this->plugrex = array_values($this->loadPlugins());
+        //$this->plugrex = array_values($this->loadPlugins());
+        $this->plugrex = $this->loadPlugins();
         
         // Load the plugin content and replace        
-        return preg_replace_callback($this->plugrex, function($matches) {
+        return preg_replace_callback(array_values($this->plugrex), function($matches) {
             $pluginName = $matches[1];
             $pluginData = $matches[2];
             // Block has content, Slice does not
