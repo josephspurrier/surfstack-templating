@@ -20,6 +20,12 @@ namespace SurfStack\Templating\Plugin;
 abstract class Block
 {
     /**
+     * Array of settings from Template Engine
+     * @var array
+     */
+    public $internal = array();
+    
+    /**
      * Called by the template, expects a return value
      * @param string $strContent
      * @param array $arrData

@@ -655,7 +655,6 @@ class Template_Engine
         
         if(preg_match_all('/(\w+=\'[^\']*\'|\w+=\"[^"]*"|\w+=[^\s]*)+/', $pluginData, $m))
         {
-            
             foreach($m[0] as $key => $k)
             {
                 $arrSplit = explode('=', $k);
