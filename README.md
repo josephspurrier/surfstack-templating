@@ -67,6 +67,36 @@ $view->setAlwaysCheckOriginal(true);
 
 ```
 
+# Template Inheritance
+
+The Template Engine supports inheritance. You can define a HTML layout in the parent
+template using the section blocks and then create a child template that extends the parent
+and contains the same section blocks. Any content within the child section blocks
+will replace the content within the parent section blocks. You can use the {parent} tag inside
+a child section block when you want the parent's content to also display.
+
+The parent template (parent.tpl) could look like this:
+
+```php
+<div>
+{section name='test'}
+World!
+{/section}
+</div>
+```
+
+The child template (child.tpl) could look like this:
+
+```php
+{extend file='parent.tpl'}
+
+{section name='test'}
+Hello {parent}
+{/section}
+```
+
+When you render child.tpl, you will get this output: Hello World!
+
 # Settings and Available Methods
 
 You also have access to these public methods to make it easy to troubleshoot
