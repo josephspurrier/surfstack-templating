@@ -400,6 +400,13 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->assertSame($content, "<p>Hello world!</p>\n\n<div>\nTest from grandparent\nTest from parent\n</div>\n\n<div>\nSafe from child ".date('Y')."\nSafe from grandparent\n</div>");
     }
     
+    public function testRenderString()
+    {        
+        $this->view->setLoadPlugins(true);
+        
+        $this->assertSame($this->view->getRenderString('{Time}'), date('Y'));
+    }
+    
     public function testNoCacheTemplates()
     {
         $this->view->setCacheTemplates(false);
