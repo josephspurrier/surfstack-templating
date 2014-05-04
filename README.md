@@ -107,6 +107,18 @@ $view->updateCompile();
 // Were the files current before render() was run?
 $view->wasCacheCurrent();
 $view->wasCompileCurrent();
+
+// Is the template error free?
+$view->isTemplateValid();
+
+// Get the error information for the template
+$view->getTemplateError();
+
+// Get an array of loaded plugins
+$view->getLoadedPlugins();
+
+// Get the number of loaded plugins
+$view->getNumberLoadedPlugins();
 ```
 
 # Plugins

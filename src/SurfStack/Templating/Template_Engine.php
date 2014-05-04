@@ -645,7 +645,7 @@ class Template_Engine
                     switch ($parent)
                     {
                     	case 'Block':
-                    	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.[^\}\{]*?)\{\/\s*'.$name.'\s*\}/i';
+                    	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.*?)\{\/\s*'.$name.'\s*\}/i';
                     	    break;
                     	case 'Slice':
                     	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
@@ -665,7 +665,7 @@ class Template_Engine
      * Get an array of loaded plugins
      * @return array
      */
-    public function getLoadedPlugins()
+    function getLoadedPlugins()
     {
         return $this->getInternal('PluginsLoaded');
     }
@@ -674,7 +674,7 @@ class Template_Engine
      * Get the number of loaded plugins
      * @return int
      */
-    public function getNumberLoadedPlugins()
+    function getNumberLoadedPlugins()
     {
         return $this->getInternal('PluginCount');
     }
@@ -902,11 +902,11 @@ echo \$class->render($pluginContent); ?>";
     }
     
     /**
-     * Returns an array of error information from error_get_last() for the template
+     * Returns an array of error information from error_get_last() for the compile template
      * or an empty array if successful
      * @return array
      */
-    function getCompileTemplateError()
+    function getTemplateError()
     {
         // If the compile is not current
         if (!$this->isCompileCurrent())

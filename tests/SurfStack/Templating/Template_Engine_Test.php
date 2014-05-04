@@ -370,7 +370,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setTemplate('sliceVariable.tpl');
     
-        $arr = $this->view->getCompileTemplateError();
+        $arr = $this->view->getTemplateError();
         
         $this->assertSame($arr['message'], 'Undefined variable: missing');
     }
