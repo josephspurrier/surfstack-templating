@@ -648,6 +648,8 @@ class Template_Engine
                     	case 'Slice':
                     	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
                     	    break;
+                    	default:
+                    	    $return[$name] = '/\{a\s*('.$parent.')\s*(.*?)\}/i';
                     }
                     
                     $this->incrementInternal('PluginCount');
