@@ -1,9 +1,13 @@
-<p>Sweet</p>
+<p>Hello world!</p>
 
+<div>
 {section name='test'}
-Replace from grandparent
+Test from grandparent
 {/section}
+</div>
 
+<div>
 {section name='safe'}
-leave from grandparent
+Safe from grandparent
 {/section}
+</div>

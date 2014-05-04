@@ -307,6 +307,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->assertSame($this->view->getLoadedPlugins(), array(
             'Blank',
             'Bold',
+            'Extend',
             'Passthru',
             'Time',
         ));
@@ -318,7 +319,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->render();
     
-        $this->assertSame($this->view->getNumberLoadedPlugins(), 4);
+        $this->assertSame($this->view->getNumberLoadedPlugins(), 5);
     }
     
     public function testVariableBlock()
@@ -384,6 +385,19 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->view->setTemplate('sliceVariable.tpl');
     
         $this->assertTrue($this->view->isTemplateValid());
+    }
+    
+    public function testExtend()
+    {        
+        $this->view->setTemplate('child.tpl');
+        
+        $this->view->setLoadPlugins(true);
+        
+        $this->render();
+        
+        $content = str_replace("\r\n","\n", $this->output);
+        
+        $this->assertSame($content, "<p>Hello world!</p>\n\n<div>\nTest from grandparent\nTest from parent\n</div>\n\n<div>\nSafe from child\nSafe from grandparent\n</div>");
     }
     
     public function testNoCacheTemplates()

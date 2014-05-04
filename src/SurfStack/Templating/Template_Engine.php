@@ -74,6 +74,8 @@ class Template_Engine
         
         // Store the template full path
         $this->template = stream_resolve_include_path($template);
+        
+        $this->setInternal('Template', $this->template);
     }
 
     /**
@@ -539,6 +541,9 @@ class Template_Engine
         // Strip multi-line comments
         //$stripTags[] = '/'.$stripSpace.'\{\*(.[^\}\{]*?)\*\}'.$stripSpace.'/s';
         
+        // Strip section tags and all space around
+        $stripTags[] = '/\s*\{\s*(section)\s*(.*?)\}(.*?)\{\/\s*section\s*\}\s*/si';
+        
         return preg_replace($stripTags, '', $content);
     }
     
@@ -645,7 +650,7 @@ class Template_Engine
                     switch ($parent)
                     {
                     	case 'Block':
-                    	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.*?)\{\/\s*'.$name.'\s*\}/i';
+                    	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.*?)\{\/\s*'.$name.'\s*\}/si';
                     	    break;
                     	case 'Slice':
                     	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
