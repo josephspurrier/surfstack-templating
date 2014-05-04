@@ -858,6 +858,21 @@ echo \$class->render($pluginContent); ?>";
     }
     
     /**
+     * Called by isTemplateValid() to record error
+     * @param int $errno
+     * @param string $errstr
+     * @param string $errfile
+     * @param int $errline
+     * @return boolean
+     */
+    protected function errorHandler($errno, $errstr, $errfile, $errline)
+    {
+        $this->error = false;
+        
+        return true;
+    }
+    
+    /**
      * Determines if the template has any non-fatal problems
      * @return boolean
      */
@@ -865,10 +880,7 @@ echo \$class->render($pluginContent); ?>";
     {        
         $this->error = true;
         
-        set_error_handler(function ($errno, $errstr, $errfile, $errline) {
-            $this->error = false;            
-            return true;
-        });
+        set_error_handler(array($this, 'errorHandler'));
         
         // If the compile is not current
         if (!$this->isCompileCurrent())
