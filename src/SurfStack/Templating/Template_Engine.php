@@ -638,7 +638,9 @@ class Template_Engine
                     
                     $name = str_replace('.php', '', basename($file));
                     
-                    $parent = basename(get_parent_class('\SurfStack\Templating\Plugin\\'.$name));
+                    $arr = explode('\\', get_parent_class('\SurfStack\Templating\Plugin\\'.$name));
+                    
+                    $parent = array_pop($arr);
                     
                     switch ($parent)
                     {
@@ -648,8 +650,6 @@ class Template_Engine
                     	case 'Slice':
                     	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
                     	    break;
-                    	default:
-                    	    $return[$name] = '/\{a\s*('.$parent.')\s*(.*?)\}/i';
                     }
                     
                     $this->incrementInternal('PluginCount');
