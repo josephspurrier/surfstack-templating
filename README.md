@@ -75,7 +75,7 @@ and contains the same section blocks. Any content within the child section block
 will replace the content within the parent section blocks. You can use the {parent} tag inside
 a child section block when you want the parent's content to also display. As long as you have
 a parent template, you can create child templates and grandchild templates, etc, but you can
-only use the {extend} tag once per file.
+only use the {extend} tag once per file. You can use blocks and slices inside the sections.
 
 The parent template (parent.tpl) could look like this:
 
