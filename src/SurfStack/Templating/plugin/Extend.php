@@ -11,6 +11,7 @@
 
 namespace SurfStack\Templating\Plugin;
 use SurfStack\Templating\Core\Slice;
+use SurfStack\Templating\Template_Engine;
 
 /**
  * SurfStack Template Extend Block
@@ -97,8 +98,8 @@ class Extend extends Slice
                 }
             }
             while ($this->parents);
-            
-            return $this->overlayTemplate();
+
+            return $this->arrEngineInternals['engine']->getRenderPlugins($this->overlayTemplate());
         }
         else
         {

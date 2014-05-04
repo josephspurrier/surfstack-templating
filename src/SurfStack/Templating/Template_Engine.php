@@ -58,6 +58,8 @@ class Template_Engine
         
         $this->setTemplateDir($path);
         $this->setTemplate($template);
+        
+        $this->setInternal('engine', $this);
     }
     
     /**
@@ -787,7 +789,8 @@ return "<?php $require
 \$class->store('arrEngineVariables', \$this->variables);
 \$class->store('arrEngineInternals', \$this->internal);
 \$class->store('arrPluginVariables', $sPassed);
-echo \$class->render($pluginContent); ?>";
+echo \$class->render($pluginContent); ?>
+";
     }
     
     /**
@@ -799,6 +802,48 @@ echo \$class->render($pluginContent); ?>";
     {        
         // Load the plugin content and replace        
         return preg_replace_callback(array_values($this->loadPlugins()), array($this, 'dynamicPluginReplacement') , $content);
+    }
+    
+    /**
+     * Return the rendered outpu of a string run through the plugins 
+     * @param string $content
+     * @return string
+     */
+    function getRenderPlugins($content)
+    {
+        $file = tempnam($this->getCompileDir(), 'tmp');
+        
+        file_put_contents($file, $this->parsePlugins($content));
+        
+        ob_start();
+        require $file;
+        $output = ob_get_contents();
+        ob_end_clean();
+        
+        unlink($file);
+        
+        return $output;
+    }
+    
+    /**
+     * Return the rendered output of a string run through the entire process
+     * @param string $content
+     * @return string
+     */
+    function getRenderString($content)
+    {
+        $file = tempnam($this->getCompileDir(), 'tmp');
+        
+        file_put_contents($file, $this->modifyTemplateRegex($content));
+        
+        ob_start();
+        require $file;
+        $output = ob_get_contents();
+        ob_end_clean();
+        
+        unlink($file);
+        
+        return $output;
     }
     
     /**

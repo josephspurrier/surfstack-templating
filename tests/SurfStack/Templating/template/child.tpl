@@ -1,6 +1,6 @@
 {extend file='parent.tpl'}
 
 {section name='safe'}
-Safe from child
+Safe from child {Time}
 {parent}
 {/section}

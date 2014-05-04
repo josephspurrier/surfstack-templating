@@ -397,7 +397,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $content = str_replace("\r\n","\n", $this->output);
         
-        $this->assertSame($content, "<p>Hello world!</p>\n\n<div>\nTest from grandparent\nTest from parent\n</div>\n\n<div>\nSafe from child\nSafe from grandparent\n</div>");
+        $this->assertSame($content, "<p>Hello world!</p>\n\n<div>\nTest from grandparent\nTest from parent\n</div>\n\n<div>\nSafe from child ".date('Y')."\nSafe from grandparent\n</div>");
     }
     
     public function testNoCacheTemplates()
