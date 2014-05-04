@@ -4,7 +4,7 @@ SurfStack Templating for PHP
 
 The SurfStack Template Engine is a barebones system designed to
 be lean and quick. It uses a syntax very similar to Smarty and outputs compiled
-and optional cached templates in pure PHP. The engine also has optional regular
+and optional cached templates. The engine also has optional regular
 expressions to strip out open and closed PHP tags, PHP echo short tags, PHP short tags,
 and ASP tags to keep your templates clean and readable.
 
