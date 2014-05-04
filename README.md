@@ -27,10 +27,10 @@ it with a unique file name in the compile directory.
 
 ```php
 // Create an instance of the class
-$view = new SurfStack\Templating\Template_Engine('template/template.tpl');
+$view = new SurfStack\Templating\Template_Engine(__DIR__.'/template', 'template.tpl');
 
 // Set the compile directory
-$view->setCompileDir('template_compile');
+$view->setCompileDir(__DIR__.'/template_compile');
 
 // Assign variables
 $view->assign('items', array('hello', 'world));
@@ -53,7 +53,7 @@ but will always detect changes in the templates.
 
 ```php
 // Set the cache directory
-$view->setCacheDir('template_cache');
+$view->setCacheDir(__DIR__.'/template_cache');
 
 // Enable caching
 $view->setCacheTemplates(true);
@@ -79,7 +79,7 @@ $view->setStripTags(true);
 $view->setStripWhitespace(true);
 
 // Set the plugin directory
-$view->setPluginDir('plugin');
+$view->setPluginDir(__DIR__.'/plugin');
 
 // Load plugins
 $view->setLoadPlugins(true);
