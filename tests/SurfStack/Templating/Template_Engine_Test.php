@@ -429,8 +429,6 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->render();
         
-        sleep(1);
-        
         $this->assertTrue($this->view->isCacheCurrent());
     }
     
