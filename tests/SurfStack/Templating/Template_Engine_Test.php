@@ -340,49 +340,6 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->view->render();
     }
     
-    public function testPrePost()
-    {    
-        $this->view->clear();
-    
-        $this->view->assign('test', 'Hello world');
-    
-        $this->view->setTemplate('blockVariable.tpl');
-    
-        $this->view->setLoadPlugins(true);
-    
-        $this->view->setStripTags(false);
-    
-        $this->view->setStripWhitespace(false);
-    
-        $this->render();
-        
-        $this->assertTrue($this->view->post);
-    }
-    
-    public function testPlugRex()
-    {
-        $this->view->clear();
-    
-        $this->view->assign('test', 'Hello world');
-    
-        $this->view->setTemplate('blockVariable.tpl');
-    
-        $this->view->setLoadPlugins(true);
-    
-        $this->view->setStripTags(false);
-    
-        $this->view->setStripWhitespace(false);
-    
-        $this->render();
-    
-        $this->assertSame($this->view->plugrex, array(
-            'Blank' => '/\{\s*(Blank)\s*(.*?)\}/i',
-            'Bold' => '/\{\s*(Bold)\s*(.*?)\}(.[^\}\{]*?)\{\/\s*Bold\s*\}/i',
-            'Passthru' => '/\{\s*(Passthru)\s*(.*?)\}(.[^\}\{]*?)\{\/\s*Passthru\s*\}/i',
-            'Time' => '/\{\s*(Time)\s*(.*?)\}/i',
-        ));
-    }
-    
     public function testSlice()
     {
         $this->expectOutputString(date('Y'));

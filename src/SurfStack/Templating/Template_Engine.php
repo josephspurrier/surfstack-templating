@@ -758,9 +758,32 @@ class Template_Engine
         //return '';
         return join(PHP_EOL, array_reverse($arrRequire));
     }
-
-    public $post;
-    public $plugrex;
+    
+    /**
+     * Replace the plugin tags with PHP code
+     * @param array $matches
+     * @return string
+     */
+    protected function dynamicPluginReplacement($matches)
+    {
+        $pluginName = $matches[1];
+        $pluginData = $matches[2];
+        // Block has content, Slice does not
+        $pluginContent = (isset($matches[3]) ? "'".addslashes($matches[3])."'" : '');
+    
+        // Get the variables as a renderable array
+        $sPassed = $this->buildRenderableArray($this->parsePluginVariables($pluginData));
+    
+        // Get the requires classes as strings
+        $require = $this->getRequiredClasses('\SurfStack\Templating\Plugin\\'.$pluginName);
+    
+return "<?php $require
+\$class = new \SurfStack\Templating\Plugin\\$pluginName();
+\$class->store('arrEngineVariables', \$this->variables);
+\$class->store('arrEngineInternals', \$this->internal);
+\$class->store('arrPluginVariables', $sPassed);
+echo \$class->render($pluginContent); ?>";
+    }
     
     /**
      * Replace plugin tags with PHP code
@@ -768,34 +791,9 @@ class Template_Engine
      * @return string
      */
     protected function parsePlugins($content)
-    {
-        $this->post = false;
-        
-        //$this->plugrex = array_values($this->loadPlugins());
-        $this->plugrex = $this->loadPlugins();
-        
+    {        
         // Load the plugin content and replace        
-        return preg_replace_callback(array_values($this->plugrex), function($matches) {
-            $pluginName = $matches[1];
-            $pluginData = $matches[2];
-            // Block has content, Slice does not
-            $pluginContent = (isset($matches[3]) ? "'".addslashes($matches[3])."'" : '');
-        
-            // Get the variables as a renderable array
-            $sPassed = $this->buildRenderableArray($this->parsePluginVariables($pluginData));
-        
-            // Get the requires classes as strings
-            $require = $this->getRequiredClasses('\SurfStack\Templating\Plugin\\'.$pluginName);
-            
-            $this->post = true;
-        
-            return "<?php $require
-            \$class = new \SurfStack\Templating\Plugin\\$pluginName();
-            \$class->store('arrEngineVariables', \$this->variables);
-            \$class->store('arrEngineInternals', \$this->internal);
-            \$class->store('arrPluginVariables', $sPassed);
-            echo \$class->render($pluginContent); ?>";
-        }, $content);
+        return preg_replace_callback(array_values($this->loadPlugins()), array($this, 'dynamicPluginReplacement') , $content);
     }
     
     /**
