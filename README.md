@@ -73,7 +73,9 @@ The Template Engine supports inheritance. You can define a HTML layout in the pa
 template using the section blocks and then create a child template that extends the parent
 and contains the same section blocks. Any content within the child section blocks
 will replace the content within the parent section blocks. You can use the {parent} tag inside
-a child section block when you want the parent's content to also display.
+a child section block when you want the parent's content to also display. As long as you have
+a parent template, you can create child templates and grandchild templates, etc, but you can
+only use the {extend} tag once per file.
 
 The parent template (parent.tpl) could look like this:
 
