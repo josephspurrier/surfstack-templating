@@ -1,5 +1,6 @@
-SurfStack Templating for PHP [![Build Status](https://travis-ci.org/josephspurrier/surfstack-templating.svg)](https://travis-ci.org/josephspurrier/surfstack-templating) [![Coverage Status](https://coveralls.io/repos/josephspurrier/surfstack-templating/badge.png)](https://coveralls.io/r/josephspurrier/surfstack-templating)
+SurfStack Templating for PHP
 =================================
+[![Build Status](https://travis-ci.org/josephspurrier/surfstack-templating.svg)](https://travis-ci.org/josephspurrier/surfstack-templating) [![Coverage Status](https://coveralls.io/repos/josephspurrier/surfstack-templating/badge.png)](https://coveralls.io/r/josephspurrier/surfstack-templating)
 
 The SurfStack Template Engine is a barebones system designed to
 be lean and quick. It uses a syntax very similar to Smarty and outputs compiled
