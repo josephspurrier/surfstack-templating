@@ -20,6 +20,21 @@ If you are looking for a lightweight template engine to use with PHP, please
 fork the project and add your own customizations. I'd love you see what you
 come up with.
 
+# Support Control Structures Syntax
+
+This is the syntax for the control structures.
+
+```
+{if},{elseif},{else},{end}
+{for},{endfor}
+{foreach},{endforeach}
+{while},{endwhile}
+
+
+```
+
+
+
 # Render a string
 
 Create an instance of the class, assign a few variables, and then render the string.

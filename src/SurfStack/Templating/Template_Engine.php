@@ -610,7 +610,7 @@ class Template_Engine
         //$stripTags[] = '/'.$stripSpace.'\{\*(.[^\}\{]*?)\*\}'.$stripSpace.'/s';
         
         // Strip section tags and all space around
-        $stripTags[] = '/\s*\{\s*(section)\s*(.*?)\}(.*?)\{\/\s*section\s*\}\s*/si';
+        $stripTags[] = '/\s*\{(section)\s*(.*?)\}(.*?)\{\/section\s*\}\s*/si';
         
         return preg_replace($stripTags, '', $content);
     }
@@ -681,7 +681,7 @@ class Template_Engine
             'require',
         ) as $c)
         {
-            $regex['<?php '.$c.' $1; ?>'] = '/\{\s*'.$c.'\s+(.*?)\}/';
+            $regex['<?php '.$c.' $1; ?>'] = '/\{'.$c.'\s+(.*?)\}/';
         }
         
         // Embed files into templates
@@ -956,7 +956,7 @@ echo \$class->render($pluginContent); ?>
                 'declare',
             ) as $c)
             {
-                $regex['/\{\s*'.$c.'\s*(.*?)\}/'] = '<?php '.$c.' $1: ?>';
+                $regex['/\{'.$c.'\s*(.*?)\}/'] = '<?php '.$c.' $1: ?>';
             }
             
             // Replace bottoms (semicolons)
@@ -969,9 +969,10 @@ echo \$class->render($pluginContent); ?>
                 'endswitch',
                 'break',
                 'continue',
+                'dowhile',
             ) as $c)
             {
-                $regex['/\{\s*'.$c.'\s*(.*?)\}/'] = '<?php '.$c.'$1; ?>';
+                $regex['/\{'.$c.'\s*(.*?)\}/'] = '<?php '.$c.'$1; ?>';
             }
             
             // Replace the outliers
@@ -979,10 +980,10 @@ echo \$class->render($pluginContent); ?>
                 '/\{\*(.[^\}\{]*?)\*\}/s' => '/*$1*/',
                 '/\{=e\s*(.*?)\}/' => '<?php echo htmlentities($1, ENT_QUOTES, "UTF-8"); ?>',
                 '/\{=\s*(.*?)\}/' => '<?php echo $1; ?>',
-                '/\{\s*case\s*(.*?)\}/' => '<?php case $1: ?>',
-                '/\{\s*switch\s*(.[^'."\r\n".']*?)'."\r\n".'(.*?)\}/' => '<?php switch $1:'."\r\n".'$2: ?>',
-                '/\{\s*switch\s*(.[^'."\n".']*?)'."\n".'(.*?)\}/' => '<?php switch $1:'."\n".'$2: ?>',
-                '/\{\s*\$\s*(.*?)\}/' => '<?php $$1; ?>',
+                '/\{case\s*(.*?)\}/' => '<?php case $1: ?>',
+                '/\{switch\s*(.[^'."\r\n".']*?)'."\r\n".'(.*?)\}/' => '<?php switch $1:'."\r\n".'$2: ?>',
+                '/\{switch\s*(.[^'."\n".']*?)'."\n".'(.*?)\}/' => '<?php switch $1:'."\n".'$2: ?>',
+                '/\{\$\s*(.*?)\}/' => '<?php $$1; ?>',
             );
             
             // Replace the { tags with PHP tags
