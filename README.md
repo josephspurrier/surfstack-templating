@@ -251,10 +251,9 @@ control structures below to see how different the code looks on the screen.
 ## SurfStack Template Engine Syntax
 
 Below is the syntax along with all the control structures supported. It
-requires the least amount of typing, supports all the same PHP
+requires the least amount of typing, supports all the PHP
 alternative control structures, and makes it easy to escape output
-using =e. It's also supported on all PHP servers because it doesn't
-make use of any PHP short tags.
+using =e.
 
 ```
 {* This is a single line comment *}
@@ -309,9 +308,9 @@ This is a multi line comment
 
 ## PHP Syntax with PHP with Echo Short Tags and Short Tags
 
-Below the standard PHP syntax using the echo short tags and short tags. Echo
+Below is the standard PHP syntax using the echo short tags and short tags. Echo
 short tags are always enabled as of PHP v5.4, but the other short tags are
-not recommended for distribution because not all servers have them
+not recommended when distributing code because not all servers have them
 enabled.
 
 ```php
@@ -367,7 +366,7 @@ This is a multi line comment
 
 ## PHP Syntax with PHP without Short Tags
 
-Below the standard PHP syntax using the recommended full PHP tags. These are
+Below are the standard PHP syntax using the recommended full PHP tags. These are
 supported on all PHP systems, but they require the most amount of typing
 and provides no escaping so you must manually use the htmlentities()
 function to ensure your output is safe.
