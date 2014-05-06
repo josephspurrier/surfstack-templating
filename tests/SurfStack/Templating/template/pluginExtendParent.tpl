@@ -1,4 +1,4 @@
-{extend file='grandparent.tpl'}
+{extend file='pluginExtendGrandparent.tpl'}
 
 {section name='test'}
 {parent}

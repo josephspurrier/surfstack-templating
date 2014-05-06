@@ -1,0 +1,1 @@
+{b name='world' class=$obj array=$items}Hello{/b}!

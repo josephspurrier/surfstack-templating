@@ -42,7 +42,7 @@ class Template_Engine
      * Create class instance
      * @param string $template Template path
      */
-    function __construct($path, $template)
+    function __construct()
     {
         // Set the default settings
         $this->internal = array(
@@ -54,12 +54,31 @@ class Template_Engine
             'AlwaysCheckOriginal' => false,
             'PluginCount' => 0,
             'PluginsLoaded' => array(),
+            'CustomSyntax' => false,
+            'CustomSyntaxArray' => array(),
         );
         
-        $this->setTemplateDir($path);
-        $this->setTemplate($template);
-        
         $this->setInternal('engine', $this);
+    }
+    
+    /**
+     * If true, disables all the built-in language conversions. It will then
+     * allow you to build your own template engine regular expressions.
+     * @param bool $bool
+     */
+    function setCustomSyntax($bool)
+    {
+        $this->setInternal('CustomSyntax', $bool);
+    }
+    
+    /**
+     * Add a custom regex
+     * @param string $search Regular Expression
+     * @param string $replace String of replacement text
+     */
+    function addCustomRegEx($search, $replace)
+    {
+        $this->internal['CustomSyntaxArray'][$search] = $replace;
     }
     
     /**
@@ -78,6 +97,20 @@ class Template_Engine
         $this->template = stream_resolve_include_path($template);
         
         $this->setInternal('Template', $this->template);
+        
+        $this->setTemplateDir(dirname($this->template));
+    }
+    
+    /**
+     * Internal check to ensure there is a template
+     * @throws \ErrorException
+     */
+    protected function checkTemplate()
+    {
+        if (!$this->template)
+        {
+            throw new \ErrorException('You must specify a template using: setTemplate($template).');
+        }
     }
 
     /**
@@ -96,6 +129,19 @@ class Template_Engine
         {
             return $default;
         }
+    }
+    
+    /**
+     * Get the value of internal variable array
+     * @param string $key
+     * @param string $keyvalue
+     * @return mixed
+     */
+    protected function getInternalKey($key, $keyvalue)
+    {
+        $keyvalue = strtolower($keyvalue);
+        
+        return $this->internal[$key][$keyvalue];
     }
 
     /**
@@ -121,11 +167,14 @@ class Template_Engine
     /**
      * Added to internal variable array
      * @param string $key
+     * @param string $keyvalue
      * @param string $value
      */
-    protected function pushInternal($key, $value)
+    protected function pushInternal($key, $keyvalue, $value)
     {
-        $this->internal[$key][] = $value;
+        $keyvalue = strtolower($keyvalue);
+        
+        $this->internal[$key][$keyvalue] = $value;
     }
     
     /**
@@ -167,13 +216,8 @@ class Template_Engine
      * @param string $path
      * @throws \ErrorException
      */
-    function setTemplateDir($path)
-    {
-        if (!is_dir(stream_resolve_include_path($path)))
-        {
-            throw new \ErrorException('The path, '.$path.', cannot be found.');
-        }
-    
+    protected function setTemplateDir($path)
+    {    
         $realpath = rtrim(stream_resolve_include_path($path), '/');
         
         // Store the full path
@@ -242,11 +286,14 @@ class Template_Engine
     }
     
     /**
-     * Get the MD5 of the template
+     * Get the custom MD5 of the template
      * @return string
      */
-    function getMD5Template()
+    protected function getMD5Template()
     {
+        // Check for template
+        $this->checkTemplate();
+        
         // Use filename and file content to ensure complete uniqueness
         return md5($this->template.file_get_contents($this->template));
     }
@@ -255,8 +302,11 @@ class Template_Engine
      * Get the timestamp of the template
      * @return number
      */
-    function getTimestampTemplate()
+    protected function getTimestampTemplate()
     {
+        // Check for template
+        $this->checkTemplate();
+        
         return filemtime($this->template);
     }
 
@@ -281,7 +331,14 @@ class Template_Engine
      */
     function getCacheDir()
     {
-        return ($this->getInternal('CacheDir') ? $this->getInternal('CacheDir') : dirname(realpath($this->template)));
+        if ($this->getInternal('CacheDir'))
+        {
+            return $this->getInternal('CacheDir');
+        }
+        else
+        {
+            return rtrim(sys_get_temp_dir(), '/');
+        }
     }
     
     /**
@@ -346,9 +403,9 @@ class Template_Engine
     }
     
     /**
-     * Updated the cached template
+     * Update the cached template
      */
-    function updateCache()
+    protected function updateCache()
     {
         ob_start();
     
@@ -396,7 +453,14 @@ class Template_Engine
      */
     function getCompileDir()
     {
-        return ($this->getInternal('CompileDir') ? $this->getInternal('CompileDir') : dirname(realpath($this->template)));
+        if ($this->getInternal('CompileDir'))
+        {
+            return $this->getInternal('CompileDir');
+        }
+        else 
+        {
+            return rtrim(sys_get_temp_dir(), '/');
+        }
     }
     
     /**
@@ -454,10 +518,12 @@ class Template_Engine
     }
     
     /**
-     * Updated the compiled template
+     * Updated the compiled and cached template (if enabled)
      */
-    function updateCompile()
-    {        
+    function updateTemplate()
+    {
+        $this->checkTemplate();
+        
         file_put_contents($this->getCompiledTemplate(), $this->modifyTemplateRegex(file_get_contents($this->template)));
         
         touch($this->getCompiledTemplate(), filemtime($this->template));
@@ -580,7 +646,8 @@ class Template_Engine
         if (is_file(stream_resolve_include_path($match)))
         {
             // Generate a new instance of this class
-            $class = new self($this->getInternal('TemplateDir'), stream_resolve_include_path($match));
+            $class = new self();
+            $class->setTemplate(stream_resolve_include_path($match));
             
             // Copy over the settings
             $class->setInternals($this->getInternals());
@@ -589,7 +656,7 @@ class Template_Engine
             if (!$class->isCompileCurrent())
             {
                 // Update the compile
-                $class->updateCompile();
+                $class->updateTemplate();
             }
             
             // Return the full path to the template
@@ -643,24 +710,34 @@ class Template_Engine
                 {
                     require_once $file;
                     
-                    $name = str_replace('.php', '', basename($file));
+                    $name = str_ireplace('.php', '', basename($file));
                     
-                    $arr = explode('\\', get_parent_class('\SurfStack\Templating\Plugin\\'.$name));
+                    $className = '\SurfStack\Templating\Plugin\\'.$name;
+                    
+                    $arr = explode('\\', get_parent_class($className));
                     
                     $parent = array_pop($arr);
+                    
+                    $c = new $className();
+                    
+                    // Set the custom tag name
+                    if ($c->customTagName)
+                    {
+                        $name = $c->customTagName;
+                    }
                     
                     switch ($parent)
                     {
                     	case 'Block':
-                    	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}(.*?)\{\/\s*'.$name.'\s*\}/si';
+                    	    $return[$name] = '/\{('.$name.')(\s+.*?|)\}(.*?)\{\/'.$name.'\}/si';
                     	    break;
                     	case 'Slice':
-                    	    $return[$name] = '/\{\s*('.$name.')\s*(.*?)\}/i';
+                    	    $return[$name] = '/\{('.$name.')(\s+.*?|)\}/i';
                     	    break;
                     }
                     
                     $this->incrementInternal('PluginCount');
-                    $this->pushInternal('PluginsLoaded', $name);
+                    $this->pushInternal('PluginsLoaded', $name, $className);
                 }
             }
         }
@@ -762,7 +839,7 @@ class Template_Engine
             $class = get_parent_class($class);
         
         } while ($class);
-        //return '';
+
         return join(PHP_EOL, array_reverse($arrRequire));
     }
     
@@ -777,15 +854,30 @@ class Template_Engine
         $pluginData = $matches[2];
         // Block has content, Slice does not
         $pluginContent = (isset($matches[3]) ? "'".addslashes($matches[3])."'" : '');
-    
+        
+        $passed = $this->parsePluginVariables($pluginData);
+        
         // Get the variables as a renderable array
-        $sPassed = $this->buildRenderableArray($this->parsePluginVariables($pluginData));
-    
+        $sPassed = $this->buildRenderableArray($passed);
+        
+        // Load the read name of the class
+        $class = $this->getInternalKey('PluginsLoaded', $pluginName);
+        
         // Get the requires classes as strings
-        $require = $this->getRequiredClasses('\SurfStack\Templating\Plugin\\'.$pluginName);
+        $require = $this->getRequiredClasses($class);
+        
+        // If customOutput is set, out the actual content
+        $c = new $class();        
+        if ($c->customOutput)
+        {
+            $c->store('arrEngineVariables', $this->variables);
+            $c->store('arrEngineInternals', $this->internal);
+            $c->store('arrPluginVariables', $passed);
+            return $c->render($pluginContent);
+        }
     
 return "<?php $require
-\$class = new \SurfStack\Templating\Plugin\\$pluginName();
+\$class = new $class();
 \$class->store('arrEngineVariables', \$this->variables);
 \$class->store('arrEngineInternals', \$this->internal);
 \$class->store('arrPluginVariables', $sPassed);
@@ -805,36 +897,15 @@ echo \$class->render($pluginContent); ?>
     }
     
     /**
-     * Return the rendered outpu of a string run through the plugins 
+     * Return the rendered output of a string run through the plugins 
      * @param string $content
      * @return string
      */
-    function getRenderPlugins($content)
+    function getApplyPlugins($content)
     {
         $file = tempnam($this->getCompileDir(), 'tmp');
         
         file_put_contents($file, $this->parsePlugins($content));
-        
-        ob_start();
-        require $file;
-        $output = ob_get_contents();
-        ob_end_clean();
-        
-        unlink($file);
-        
-        return $output;
-    }
-    
-    /**
-     * Return the rendered output of a string run through the entire process
-     * @param string $content
-     * @return string
-     */
-    function getRenderString($content)
-    {
-        $file = tempnam($this->getCompileDir(), 'tmp');
-        
-        file_put_contents($file, $this->modifyTemplateRegex($content));
         
         ob_start();
         require $file;
@@ -853,58 +924,74 @@ echo \$class->render($pluginContent); ?>
      */
     protected function modifyTemplateRegex($content)
     {
+        if ($this->getInternal('CustomSyntaxArray'))
+        {
+            // Custom content first
+            $content = preg_replace(array_keys($this->getInternal('CustomSyntaxArray')), array_values($this->getInternal('CustomSyntaxArray')), $content);
+        }
+        
         // Strip tags
         $content = $this->stripTags($content);
         
-        // Update required files
-        $content = $this->updateEmbeddedFiles($content);
-        
-        // Replace tops and mids (colons)
-        foreach(array(
-            'elseif',
-            'else',
-            'if',
-            'foreach',
-            'for',
-            'while',
-            'declare',
-        ) as $c)
-        {
-            $regex['<?php '.$c.' $1: ?>'] = '/\{\s*'.$c.'\s*(.*?)\}/';
+        if ($this->getInternal('CustomSyntax'))
+        {            
+            $content = preg_replace(array_keys($this->getInternal('CustomSyntaxArray')), array_values($this->getInternal('CustomSyntaxArray')), $content);
+            
+            // Replace the plugin tags
+            return $this->parsePlugins($content);
         }
-        
-        // Replace bottoms (semicolons)
-        foreach(array(
-            'endif',
-            'endforeach',
-            'endfor',
-            'endwhile',
-            'enddeclare',
-            'endswitch',
-            'break',
-            'continue',
-        ) as $c)
+        else
         {
-            $regex['<?php '.$c.'$1; ?>'] = '/\{\s*'.$c.'\s*(.*?)\}/';
+            // Update required files
+            $content = $this->updateEmbeddedFiles($content);
+            
+            // Replace tops and mids (colons)
+            foreach(array(
+                'elseif',
+                'else',
+                'if',
+                'foreach',
+                'for',
+                'while',
+                'declare',
+            ) as $c)
+            {
+                $regex['/\{\s*'.$c.'\s*(.*?)\}/'] = '<?php '.$c.' $1: ?>';
+            }
+            
+            // Replace bottoms (semicolons)
+            foreach(array(
+                'endif',
+                'endforeach',
+                'endfor',
+                'endwhile',
+                'enddeclare',
+                'endswitch',
+                'break',
+                'continue',
+            ) as $c)
+            {
+                $regex['/\{\s*'.$c.'\s*(.*?)\}/'] = '<?php '.$c.'$1; ?>';
+            }
+            
+            // Replace the outliers
+            $custom = array(
+                '/\{\*(.[^\}\{]*?)\*\}/s' => '/*$1*/',
+                '/\{=e\s*(.*?)\}/' => '<?php echo htmlentities($1, ENT_QUOTES, "UTF-8"); ?>',
+                '/\{=\s*(.*?)\}/' => '<?php echo $1; ?>',
+                '/\{\s*case\s*(.*?)\}/' => '<?php case $1: ?>',
+                '/\{\s*switch\s*(.[^'."\r\n".']*?)'."\r\n".'(.*?)\}/' => '<?php switch $1:'."\r\n".'$2: ?>',
+                '/\{\s*switch\s*(.[^'."\n".']*?)'."\n".'(.*?)\}/' => '<?php switch $1:'."\n".'$2: ?>',
+                '/\{\s*\$\s*(.*?)\}/' => '<?php $$1; ?>',
+            );
+            
+            // Replace the { tags with PHP tags
+            $regex = array_merge($regex, $custom);
+            $content = preg_replace(array_keys($regex), array_values($regex), $content);
+            
+            // Replace the plugin tags
+            return $this->parsePlugins($content);
         }
-
-        // Replace the outliers
-        $custom = array(
-            '/*$1*/' => '/\{\*(.[^\}\{]*?)\*\}/s',
-            '<?php echo htmlentities($1, ENT_QUOTES, "UTF-8"); ?>' => '/\{=e\s*(.*)\}/',
-            '<?php echo $1; ?>' => '/\{=\s*(.*?)\}/',
-            '<?php case $1: ?>' => '/\{\s*case\s*(.*?)\}/',
-            '<?php switch $1:'."\r\n".'$2: ?>' => '/\{\s*switch\s*(.[^'."\r\n".']*?)'."\r\n".'(.*?)\}/',
-            '<?php switch $1:'."\n".'$2: ?>' => '/\{\s*switch\s*(.[^'."\n".']*?)'."\n".'(.*?)\}/',
-            '<?php $$1; ?>' => '/\{\s*\$\s*(.*?)\}/',
-        );
-        
-        // Replace the { tags with PHP tags
-        $regex = array_merge($regex, $custom);
-        $content = preg_replace(array_values($regex), array_keys($regex), $content);
-        
-        // Replace the plugin tags
-        return $this->parsePlugins($content);
     }
     
     /**
@@ -936,7 +1023,7 @@ echo \$class->render($pluginContent); ?>
         if (!$this->isCompileCurrent())
         {
             // Update the compile
-            $this->updateCompile();
+            $this->updateTemplate();
         }
         
         // Extract the variables
@@ -962,7 +1049,7 @@ echo \$class->render($pluginContent); ?>
         if (!$this->isCompileCurrent())
         {
             // Update the compile
-            $this->updateCompile();
+            $this->updateTemplate();
         }
         
         // Extract the variables
@@ -978,10 +1065,42 @@ echo \$class->render($pluginContent); ?>
     }
     
     /**
-     * Render the template (compile and caching logic)
+     * Return the render as a string
+     * @return string
      */
-    function render()
-    {        
+    function getRender($string = null)
+    {
+        ob_start();
+        $this->render($string);
+        $output = ob_get_contents();
+        ob_end_clean();
+        
+        return $output;
+    }
+    
+    /**
+     * Render a string
+     * @param string $content
+     */
+    protected function renderString($content)
+    {
+        $file = tempnam($this->getCompileDir(), 'tmp');
+    
+        file_put_contents($file, $this->modifyTemplateRegex($content));
+    
+        // Extract the variables
+        extract($this->variables);
+        
+        require $file;
+    
+        unlink($file);
+    }
+    
+    /**
+     * Render a template
+     */
+    protected function renderTemplate()
+    {
         // Marked them as null for testing purposes
         $this->setInternal('WasCached', null);
         $this->setInternal('WasCompiled', null);
@@ -994,7 +1113,7 @@ echo \$class->render($pluginContent); ?>
             {
                 // Marked the cache as current
                 $this->setInternal('WasCached', true);
-                
+        
                 // If set to always check and the the compile is not current
                 if ($this->getInternal('AlwaysCheckOriginal'))
                 {
@@ -1008,12 +1127,12 @@ echo \$class->render($pluginContent); ?>
                     {
                         // Mark the compile as not current
                         $this->setInternal('WasCompiled', false);
-                        
+        
                         // Mark the cache as not current
                         $this->setInternal('WasCached', false);
-                        
+        
                         // Update the compile (and the cache)
-                        $this->updateCompile();
+                        $this->updateTemplate();
                     }
                 }
             }
@@ -1022,14 +1141,14 @@ echo \$class->render($pluginContent); ?>
             {
                 // Marked the cache as not current
                 $this->setInternal('WasCached', false);
-                
+        
                 // Mark the compile as not current
                 $this->setInternal('WasCompiled', false);
-                
+        
                 // Update the compile (and the cache)
-                $this->updateCompile();
+                $this->updateTemplate();
             }
-            
+        
             // Render the cache
             require $this->getCachedTemplate();
         }
@@ -1039,23 +1158,38 @@ echo \$class->render($pluginContent); ?>
             // If the compile is current
             if ($this->isCompileCurrent())
             {
-                // Mark the compile as current                
+                // Mark the compile as current
                 $this->setInternal('WasCompiled', true);
             }
             else
             {
                 // Mark the compile as not current
                 $this->setInternal('WasCompiled', false);
-                
+        
                 // Update the compile
-                $this->updateCompile();
+                $this->updateTemplate();
             }
-            
+        
             // Extract the variables
             extract($this->variables);
-
+        
             // Render the compile
             require $this->getCompiledTemplate();
-        }   
+        }
+    }
+    
+    /**
+     * Render the template or string
+     */
+    function render($string = null)
+    {
+        if ($string)
+        {
+            $this->renderString($string);
+        }
+        else
+        {
+            $this->renderTemplate();
+        }
     }
 }

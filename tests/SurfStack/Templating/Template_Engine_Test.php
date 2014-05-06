@@ -21,9 +21,15 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
     protected $output;
     
+    protected $templateDir;
+    
     protected function setUp()
     {
-        $this->view = new SurfStack\Templating\Template_Engine(__DIR__.'/template/', 'template.tpl');
+        $this->templateDir = __DIR__.'/template/';
+        
+        $this->view = new SurfStack\Templating\Template_Engine();
+        
+        $this->view->setTemplate($this->templateDir.'template.tpl');
         
         $this->view->setCompileDir(__DIR__.'/template_compile');
         $this->view->setCacheDir(__DIR__.'/template_cache');
@@ -114,15 +120,18 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
      */
     public function testTemplateNotExist()
     {        
-        $this->view->setTemplate('templateNotExist.tpl');
+        $this->view->setTemplate($this->templateDir.'templateNotExist.tpl');
     }
     
     /**
      * @expectedException ErrorException
      */
-    public function testTemplateDirMissing()
+    public function testTemplateNotExistInternal()
     {
-        $this->view->setTemplateDir('nowhere');
+        $view = new SurfStack\Templating\Template_Engine();
+        $view->setCompileDir(__DIR__.'/template_compile');
+        $view->updateTemplate();
+        $view->render();
     }
     
     /**
@@ -141,12 +150,24 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->view->setCacheDir('nowhere');
     }
     
+    public function testCacheDirTemp()
+    {
+        $view = new SurfStack\Templating\Template_Engine();
+        $this->assertSame($view->getCacheDir(), rtrim(sys_get_temp_dir(), '/'));
+    }
+    
     /**
      * @expectedException ErrorException
      */
     public function testCompileDirMissing()
     {
         $this->view->setCompileDir('nowhere');
+    }
+    
+    public function testCompileDirTemp()
+    {
+        $view = new SurfStack\Templating\Template_Engine();
+        $this->assertSame($view->getCompileDir(), rtrim(sys_get_temp_dir(), '/'));
     }
 
     public function testOutputText()
@@ -157,7 +178,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $this->view->setStripWhitespace(false);
         
-        $this->view->setTemplate('text.tpl');
+        $this->view->setTemplate($this->templateDir.'text.tpl');
         
         $this->view->render();
     }
@@ -170,7 +191,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $this->view->setStripWhitespace(false);
     
-        $this->view->setTemplate(__DIR__.'/template/textTag.tpl');
+        $this->view->setTemplate($this->templateDir.'textTag.tpl');
         
         $this->render();
         
@@ -185,7 +206,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(true);
     
-        $this->view->setTemplate('textTagWhitespace.tpl');
+        $this->view->setTemplate($this->templateDir.'textTagWhitespace.tpl');
     
         $this->view->render();
     }
@@ -198,7 +219,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(false);
     
-        $this->view->setTemplate('requirer.tpl');
+        $this->view->setTemplate($this->templateDir.'requirer.tpl');
     
         $this->view->render();
     }
@@ -208,7 +229,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
      */
     public function testOutputRequireMissing()
     {    
-        $this->view->setTemplate('requireMissing.tpl');
+        $this->view->setTemplate($this->templateDir.'requireMissing.tpl');
     
         $this->view->render();
     }
@@ -221,7 +242,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(true);
     
-        $this->view->setTemplate('phpFullTags.tpl');
+        $this->view->setTemplate($this->templateDir.'phpFullTags.tpl');
     
         $this->view->render();
     }
@@ -234,7 +255,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(true);
     
-        $this->view->setTemplate('phpShortTags.tpl');
+        $this->view->setTemplate($this->templateDir.'phpShortTags.tpl');
     
         $this->view->render();
     }
@@ -247,7 +268,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->setStripWhitespace(true);
     
-        $this->view->setTemplate('phpASPTags.tpl');
+        $this->view->setTemplate($this->templateDir.'phpASPTags.tpl');
     
         $this->view->render();
     }
@@ -257,7 +278,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $before = 'tagBefore.tpl';
         $after = __DIR__.'/template/tagAfter.tpl';
         
-        $this->view->setTemplate($before);
+        $this->view->setTemplate($this->templateDir.$before);
         
         $this->view->setStripTags(false);
         
@@ -268,11 +289,44 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->assertSame(file_get_contents($this->view->getCompiledTemplate()), file_get_contents($after));
     }
     
+    public function testCustomSyntaxNone()
+    {
+        $this->expectOutputString('Hello &lt;i&gt;world&lt;/i&gt;. Goodbye.');
+    
+        $this->view->assign('name', '<i>world</i>');
+    
+        $this->view->render('Hello {=e $name}. {if (true)}Goodbye.{endif}');
+    }
+    
+    public function testCustomSyntaxOff()
+    {        
+        $this->expectOutputString('Hello galaxy. Goodbye.');
+        
+        $this->view->assign('name', '<i>world</i>');
+        
+        $this->view->addCustomRegEx('/\{=e\s*(.*?)\}/','galaxy');
+        
+        $this->view->render('Hello {=e $name}. {if (true)}Goodbye.{endif}');
+    }
+    
+    public function testCustomSyntaxOn()
+    {
+        $this->expectOutputString('Hello galaxy. {if (true)}Goodbye.{endif}');
+    
+        $this->view->setCustomSyntax(true);
+    
+        $this->view->assign('name', '<i>world</i>');
+    
+        $this->view->addCustomRegEx('/\{=e\s*(.*?)\}/','galaxy');
+    
+        $this->view->render('Hello {=e $name}. {if (true)}Goodbye.{endif}');
+    }
+    
     public function testNoLoadPlugins()
     {        
         $this->expectOutputString("{Bold name='world' class=\$obj array=\$items}Hello{/Bold}!");
         
-        $this->view->setTemplate('block.tpl');
+        $this->view->setTemplate($this->templateDir.'pluginBold.tpl');
         
         $this->view->setLoadPlugins(false);
         
@@ -287,8 +341,23 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {        
         $this->expectOutputString('<strong>Hello</strong> world!');
         
-        $this->view->setTemplate('block.tpl');
+        $this->view->setTemplate($this->templateDir.'pluginBold.tpl');
         
+        $this->view->setLoadPlugins(true);
+    
+        $this->view->setStripTags(false);
+    
+        $this->view->setStripWhitespace(false);
+    
+        $this->view->render();
+    }
+    
+    public function testBlockCustomName()
+    {
+        $this->expectOutputString('<strong><i>Hello</i></strong> world!');
+    
+        $this->view->setTemplate($this->templateDir.'pluginBold2.tpl');
+    
         $this->view->setLoadPlugins(true);
     
         $this->view->setStripTags(false);
@@ -305,11 +374,14 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         $this->render();
         
         $this->assertSame($this->view->getLoadedPlugins(), array(
-            'Blank',
-            'Bold',
-            'Extend',
-            'Passthru',
-            'Time',
+            'blank' => '\SurfStack\Templating\Plugin\Blank',
+            'bold' => '\SurfStack\Templating\Plugin\Bold',
+            'b' => '\SurfStack\Templating\Plugin\Bold2',
+            'extend' => '\SurfStack\Templating\Plugin\Extend',
+            'overwrite' => '\SurfStack\Templating\Plugin\Overwrite',
+            'passthru' => '\SurfStack\Templating\Plugin\Passthru',
+            'time' => '\SurfStack\Templating\Plugin\Time',
+            'time2' => '\SurfStack\Templating\Plugin\Time2',
         ));
     }
     
@@ -319,7 +391,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->render();
     
-        $this->assertSame($this->view->getNumberLoadedPlugins(), 5);
+        $this->assertSame($this->view->getNumberLoadedPlugins(), 8);
     }
     
     public function testVariableBlock()
@@ -330,7 +402,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
         
         $this->view->assign('test', 'Hello world');
     
-        $this->view->setTemplate('blockVariable.tpl');
+        $this->view->setTemplate($this->templateDir.'pluginBoldVariable.tpl');
     
         $this->view->setLoadPlugins(true);
     
@@ -345,13 +417,31 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {
         $this->expectOutputString(date('Y'));
     
-        $this->view->setTemplate('slice.tpl');
+        $this->view->setTemplate($this->templateDir.'pluginYear.tpl');
     
         $this->view->setLoadPlugins(true);
-        
-        $this->view->setStripTags(false);
     
-        $this->view->setStripWhitespace(false);
+        $this->view->render();
+    }
+    
+    public function testSliceSimilarName()
+    {
+        $this->expectOutputString(date('YY'));
+    
+        $this->view->setTemplate($this->templateDir.'pluginYear2.tpl');
+    
+        $this->view->setLoadPlugins(true);
+    
+        $this->view->render();
+    }
+    
+    public function testOverwrite()
+    {
+        $this->expectOutputString('Overwrite worked.');
+    
+        $this->view->setTemplate($this->templateDir.'pluginOverwrite.tpl');
+    
+        $this->view->setLoadPlugins(true);
     
         $this->view->render();
     }
@@ -360,7 +450,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {
         $this->view->setLoadPlugins(true);
     
-        $this->view->setTemplate('sliceVariable.tpl');
+        $this->view->setTemplate($this->templateDir.'pluginBlankVariable.tpl');
     
         $this->assertFalse($this->view->isTemplateValid());
     }
@@ -369,7 +459,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {
         $this->view->setLoadPlugins(true);
     
-        $this->view->setTemplate('sliceVariable.tpl');
+        $this->view->setTemplate($this->templateDir.'pluginBlankVariable.tpl');
     
         $arr = $this->view->getTemplateError();
         
@@ -382,14 +472,14 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     
         $this->view->assign('missing', 'notmissing');
     
-        $this->view->setTemplate('sliceVariable.tpl');
+        $this->view->setTemplate($this->templateDir.'pluginBlankVariable.tpl');
     
         $this->assertTrue($this->view->isTemplateValid());
     }
     
     public function testExtend()
     {        
-        $this->view->setTemplate('child.tpl');
+        $this->view->setTemplate($this->templateDir.'pluginExtendChild.tpl');
         
         $this->view->setLoadPlugins(true);
         
@@ -404,7 +494,7 @@ class Template_Engine_Test extends PHPUnit_Framework_TestCase
     {        
         $this->view->setLoadPlugins(true);
         
-        $this->assertSame($this->view->getRenderString('{Time}'), date('Y'));
+        $this->assertSame($this->view->getRender('{Time}'), date('Y'));
     }
     
     public function testNoCacheTemplates()

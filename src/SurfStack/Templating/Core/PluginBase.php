@@ -37,6 +37,18 @@ abstract class PluginBase
     protected $arrPluginVariables = array();
     
     /**
+     * Determines if render should be the content stored in a compiled template
+     * @var bool
+     */
+    public $customOutput = false;
+    
+    /**
+     * Set a custom tag name
+     * @var string
+     */
+    public $customTagName = '';
+    
+    /**
      * Store a data to a variable
      * @param string $key
      * @param string $value

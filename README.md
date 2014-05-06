@@ -10,7 +10,8 @@ and ASP tags to keep your templates clean and readable.
 
 PHP itself is a template system, BUT it's not the easiest to read at glance.
 Instead of using tags like <?php, the SurfStack Template Engine uses
-curly braces so you can type less and build more.
+curly braces so you can type less and build more. The tag names are case-insensitive,
+but the tag data is case sensitive.
 
 There is a full set of unit tests for the Template Engine class using PHPUnit.
 The Template Engine has 100% code coverage.
@@ -19,25 +20,40 @@ If you are looking for a lightweight template engine to use with PHP, please
 fork the project and add your own customizations. I'd love you see what you
 come up with.
 
-# Setup the Template Engine
+# Render a string
 
-It's a snap. Just pass your template file to the constructor, set the compile
-directory, assign a few variables, and then render the template.
+Create an instance of the class, assign a few variables, and then render the string.
+
+```php
+// Create an instance of the class
+$view = new SurfStack\Templating\Template_Engine();
+
+// Assign variables
+$view->assign('name', 'world');
+
+// Render the string directly to the screen
+$view->render('Hello {= $name}!');
+```
+
+# Render a template
+
+Create an instance of the class, set your template, 
+assign a few variables, and then echo the template to the screen.
 The engine will create a compiled version of the template in PHP and store
 it with a unique file name in the compile directory.
 
 ```php
 // Create an instance of the class
-$view = new SurfStack\Templating\Template_Engine(__DIR__.'/template', 'template.tpl');
+$view = new SurfStack\Templating\Template_Engine();
 
-// Set the compile directory
-$view->setCompileDir(__DIR__.'/template_compile');
+// Set the template
+$view->setTemplate(__DIR__.'/template/template.tpl');
 
 // Assign variables
 $view->assign('items', array('hello', 'world));
 
-// Render the template to the screen
-$view->render();
+// Render the template to the screen using echo
+echo $view->getRender();
 ```
 
 # Compiling and Caching
@@ -105,6 +121,9 @@ You also have access to these public methods to make it easy to troubleshoot
 and manage your cache and templates.
 
 ```php
+// Set the compile directory
+$view->setCompileDir(__DIR__.'/template_compile');
+
 // Strip PHP tags from template
 $view->setStripTags(true);
 
@@ -133,9 +152,8 @@ $view->isCompileCurrent();
 $view->isCached();
 $view->isCompiled();
 
-// Force update the files
-$view->updateCache();
-$view->updateCompile();
+// Force update the compiled and cached templates
+$view->updateTemplate();
 
 // Were the files current before render() was run?
 $view->wasCacheCurrent();
@@ -197,6 +215,33 @@ class Time extends Slice
 ```
 
 The template will then output: **Hello** World it is Thursday 17th of April 2014 04:47:56 AM
+
+## Plugin Settings
+
+You can set the tag name different from the class name by setting the $this->customTagName from
+the constructor of the plugin.
+You can set the render() method to return custom code instead of the prewritten PHP code by setting
+$this->customOutput to true from the constructor of the plugin.
+
+# Custom Regular Expressions
+
+You have the ability to define your own regular expressions. Any custom regular expressions will 
+be applied first before any other of the built-in modifications. You can even disable
+internal regular expressions by using setCustomSyntax(true).
+
+```PHP
+// Disable all built-in regular expressions
+$view->setCustomSyntax(true);
+
+// Assigned a variable
+$view->assign('name', '<i>world</i>');
+
+// Add a custom regular expression to overwrite escaping.
+$view->addCustomRegEx('/\{=e\s*(.*?)\}/','galaxy');
+
+// This will output: Hello galaxy. {if (true)}Goodbye.{endif}
+$view->render('Hello {=e $name}. {if (true)}Goodbye.{endif}');
+```
 
 # Comparison of Syntax
 

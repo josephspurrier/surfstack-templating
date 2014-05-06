@@ -1,4 +1,4 @@
-{require 'header.tpl'}
+{require 'templateHeader.tpl'}
 
 /* This is a comment */
 

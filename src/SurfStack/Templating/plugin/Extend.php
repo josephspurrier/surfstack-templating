@@ -99,7 +99,7 @@ class Extend extends Slice
             }
             while ($this->parents);
 
-            return $this->arrEngineInternals['engine']->getRenderPlugins($this->overlayTemplate());
+            return $this->arrEngineInternals['engine']->getApplyPlugins($this->overlayTemplate());
         }
         else
         {
@@ -202,9 +202,9 @@ class Extend extends Slice
             {
                 $content = $this->sections[$name]['content'];
                 
-                if (strpos($content, '{parent}') !== -1)
+                if (stripos($content, '{parent}') !== -1)
                 {
-                    return str_replace('{parent}', trim($matches[2]), $content);
+                    return str_ireplace('{parent}', trim($matches[2]), $content);
                 }
                 else
                 {
