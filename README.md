@@ -65,7 +65,7 @@ $view = new SurfStack\Templating\Template_Engine();
 $view->setTemplate(__DIR__.'/template/template.tpl');
 
 // Assign variables
-$view->assign('items', array('hello', 'world));
+$view->assign('items', array('hello', 'world'));
 
 // Render the template to the screen using echo
 echo $view->getRender();
